@@ -278,6 +278,13 @@ export const SyncChannelPermissionsSchema = z.object({
   channel_id: ChannelIdSchema
 }).strict();
 
+export const MoveMemberSchema = z.object({
+  guild_id: GuildIdSchema,
+  user_id: UserIdSchema,
+  channel_id: ChannelIdSchema.nullable()
+    .describe("Target voice channel ID, or null to disconnect the user")
+}).strict();
+
 export const KickMemberSchema = z.object({
   guild_id: GuildIdSchema,
   user_id: UserIdSchema,
@@ -695,6 +702,7 @@ export type SetChannelPermissionsInput = z.infer<typeof SetChannelPermissionsSch
 export type RemoveChannelPermissionsInput = z.infer<typeof RemoveChannelPermissionsSchema>;
 export type GetChannelPermissionsInput = z.infer<typeof GetChannelPermissionsSchema>;
 export type SyncChannelPermissionsInput = z.infer<typeof SyncChannelPermissionsSchema>;
+export type MoveMemberInput = z.infer<typeof MoveMemberSchema>;
 export type KickMemberInput = z.infer<typeof KickMemberSchema>;
 export type BanMemberInput = z.infer<typeof BanMemberSchema>;
 export type UnbanMemberInput = z.infer<typeof UnbanMemberSchema>;

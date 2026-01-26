@@ -45,6 +45,7 @@ import {
   RemoveChannelPermissionsSchema,
   GetChannelPermissionsSchema,
   SyncChannelPermissionsSchema,
+  MoveMemberSchema,
   KickMemberSchema,
   BanMemberSchema,
   UnbanMemberSchema,
@@ -99,6 +100,7 @@ import {
   type RemoveChannelPermissionsInput,
   type GetChannelPermissionsInput,
   type SyncChannelPermissionsInput,
+  type MoveMemberInput,
   type KickMemberInput,
   type BanMemberInput,
   type UnbanMemberInput,
@@ -1448,6 +1450,81 @@ Returns:
       return {
         isError: true,
         content: [{ type: "text", text: `Error getting member: ${(error as Error).message}` }],
+      };
+    }
+  }
+);
+
+server.registerTool(
+  "discord_move_member",
+  {
+    title: "Move Member to Voice Channel",
+    description: `Move a member to a different voice channel or disconnect them from voice.
+
+The member must currently be connected to a voice channel to be moved.
+
+Args:
+  - guild_id (string): Discord server/guild ID
+  - user_id (string): Discord user ID to move
+  - channel_id (string | null): Target voice channel ID, or null to disconnect
+
+Returns:
+  Confirmation of move or disconnect`,
+    inputSchema: MoveMemberSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  async (params: MoveMemberInput) => {
+    try {
+      const client = await getClient();
+      const guild = client.guilds.cache.get(params.guild_id);
+
+      if (!guild) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Guild not found: ${params.guild_id}` }],
+        };
+      }
+
+      const member = await guild.members.fetch(params.user_id);
+
+      if (!member.voice.channel) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `User ${params.user_id} is not connected to a voice channel` }],
+        };
+      }
+
+      const previousChannel = member.voice.channel.name;
+
+      if (params.channel_id === null) {
+        await member.voice.disconnect();
+        return {
+          content: [{ type: "text", text: `Disconnected user ${member.user.tag} from voice channel "${previousChannel}"` }],
+        };
+      }
+
+      const targetChannel = guild.channels.cache.get(params.channel_id);
+      if (!targetChannel || !targetChannel.isVoiceBased()) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Voice channel not found: ${params.channel_id}` }],
+        };
+      }
+
+      await member.voice.setChannel(targetChannel);
+
+      return {
+        content: [{ type: "text", text: `Moved user ${member.user.tag} from "${previousChannel}" to "${targetChannel.name}"` }],
+      };
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{ type: "text", text: `Error moving member: ${(error as Error).message}` }],
       };
     }
   }
