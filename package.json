@@ -1,0 +1,50 @@
+{
+  "name": "@mahesvara/discord-mcp-server",
+  "version": "1.0.2",
+  "description": "MCP server for controlling Discord servers via bot token",
+  "author": "Mahesvara",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "discord",
+    "discord-bot",
+    "discord-api",
+    "discord-management",
+    "claude",
+    "llm",
+    "ai",
+    "automation",
+    "chatbot"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "discord-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.2"
+  }
+}
