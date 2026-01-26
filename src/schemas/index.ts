@@ -61,6 +61,12 @@ export const GetGuildSchema = z.object({
   response_format: ResponseFormatSchema
 }).strict();
 
+export const LeaveGuildSchema = z.object({
+  guild_id: GuildIdSchema,
+  confirm: z.boolean()
+    .describe("Must be set to true to confirm leaving the server")
+}).strict();
+
 export const ListChannelsSchema = z.object({
   guild_id: GuildIdSchema,
   type: z.enum(["text", "voice", "category", "all"])
@@ -670,6 +676,7 @@ export const ListBansSchema = z.object({
 // Type exports
 export type ListGuildsInput = z.infer<typeof ListGuildsSchema>;
 export type GetGuildInput = z.infer<typeof GetGuildSchema>;
+export type LeaveGuildInput = z.infer<typeof LeaveGuildSchema>;
 export type ListChannelsInput = z.infer<typeof ListChannelsSchema>;
 export type GetChannelInput = z.infer<typeof GetChannelSchema>;
 export type SendMessageInput = z.infer<typeof SendMessageSchema>;
