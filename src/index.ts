@@ -3487,8 +3487,9 @@ async function runHTTP(): Promise<void> {
   });
 
   const port = parseInt(process.env.PORT || "3000");
-  app.listen(port, () => {
-    console.error(`Discord MCP server running on http://localhost:${port}/mcp`);
+  const host = process.env.HOST || "localhost";
+  app.listen(port, host, () => {
+    console.error(`Discord MCP server running on http://${host}:${port}/mcp`);
   });
 }
 

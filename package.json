@@ -1,6 +1,6 @@
 {
-  "name": "@mahesvara/discord-mcp-server",
-  "version": "1.0.6",
+  "name": "@mahesvara/discord-mcpserver",
+  "version": "1.0.8",
   "description": "MCP server for controlling Discord servers via bot token",
   "author": "Mahesvara",
   "repository": {
