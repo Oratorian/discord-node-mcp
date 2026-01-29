@@ -286,9 +286,6 @@ Returns:
         if (params.default_channel_ids !== undefined) updateData.defaultChannelIds = params.default_channel_ids;
         if (params.mode !== undefined) updateData.mode = modeMap[params.mode];
         if (params.prompts !== undefined) {
-          // Debug: Log the incoming prompts structure
-          console.error("DEBUG prompts input:", JSON.stringify(params.prompts, null, 2));
-
           updateData.prompts = params.prompts.map(p => ({
             id: p.id,
             type: promptTypeMap[p.type],
@@ -297,9 +294,6 @@ Returns:
             required: p.required,
             inOnboarding: p.in_onboarding,
             options: p.options.map(o => {
-              // Debug: Log each option
-              console.error("DEBUG option:", JSON.stringify(o, null, 2));
-
               // Discord requires at least one role OR channel per option
               const hasRoles = o.role_ids && o.role_ids.length > 0;
               const hasChannels = o.channel_ids && o.channel_ids.length > 0;
