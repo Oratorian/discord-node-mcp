@@ -1,0 +1,46 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Oratorian/discord-node-mcp",
+  "description": "MCP server for controlling Discord servers via bot token",
+  "repository": {
+    "url": "https://github.com/Oratorian/discord-node-mcp",
+    "source": "github"
+  },
+  "version": "1.1.4",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@mahesvara/discord-mcpserver",
+      "version": "1.1.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "DISCORD_BOT_TOKEN",
+          "description": "Your Discord bot token",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "TRANSPORT",
+          "description": "Transport type: stdio or http",
+          "isRequired": false,
+          "default": "stdio"
+        },
+        {
+          "name": "PORT",
+          "description": "Port for HTTP transport",
+          "isRequired": false,
+          "default": "3000"
+        },
+        {
+          "name": "HOST",
+          "description": "Host for HTTP transport",
+          "isRequired": false,
+          "default": "localhost"
+        }
+      ]
+    }
+  ]
+}

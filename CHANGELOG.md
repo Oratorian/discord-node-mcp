@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2025-01-29
+
+### Added
+- GitHub Actions workflow for automated publishing to npm using OIDC trusted publishers
+- NPM_OIDC_SETUP.md documentation for setting up automated publishing
+
+### Changed
+- Automated publishing now uses OIDC authentication (no npm tokens required)
+- Packages now include provenance attestations automatically
+
 ## [1.1.3] - 2025-01-29
 
 ### Fixed

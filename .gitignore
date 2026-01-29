@@ -27,7 +27,6 @@ coverage/
 
 # npm pack output
 *.tgz
-server.json
 .mcpregistry_github_token
 .mcpregistry_registry_token
 
