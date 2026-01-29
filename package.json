@@ -1,6 +1,6 @@
 {
   "name": "@mahesvara/discord-mcpserver",
-  "version": "1.0.8",
+  "version": "1.1.2",
   "description": "MCP server for controlling Discord servers via bot token",
   "author": "Mahesvara",
   "repository": {
@@ -27,7 +27,7 @@
   },
   "main": "dist/index.js",
   "bin": {
-    "discord-mcp-server": "dist/index.js"
+    "discord-mcpserver": "dist/index.js"
   },
   "files": [
     "dist",

@@ -1,8 +1,8 @@
-import { 
-  Client, 
-  GatewayIntentBits, 
-  TextChannel, 
-  Guild, 
+import {
+  Client,
+  GatewayIntentBits,
+  TextChannel,
+  Guild,
   GuildMember,
   Role,
   Message,
@@ -11,13 +11,13 @@ import {
   Channel,
   GuildChannel
 } from "discord.js";
-import { 
-  DiscordChannel, 
-  DiscordGuild, 
-  DiscordMember, 
-  DiscordRole, 
+import {
+  DiscordChannel,
+  DiscordGuild,
+  DiscordMember,
+  DiscordRole,
   DiscordMessage,
-  ResponseFormat 
+  ResponseFormat
 } from "../types.js";
 import { CHARACTER_LIMIT } from "../constants.js";
 
@@ -106,6 +106,20 @@ export function formatChannel(channel: GuildChannel): DiscordChannel {
 
   if (channel.type === ChannelType.GuildText && 'topic' in channel) {
     baseChannel.topic = (channel as TextChannel).topic ?? undefined;
+  }
+
+  // Forum channel specific fields
+  if (channel.type === ChannelType.GuildForum && 'availableTags' in channel) {
+    const forumChannel = channel as any;
+    baseChannel.availableTags = forumChannel.availableTags?.map((tag: any) => ({
+      id: tag.id,
+      name: tag.name,
+      moderated: tag.moderated,
+      emoji: tag.emoji ? { id: tag.emoji.id, name: tag.emoji.name } : null,
+    }));
+    baseChannel.defaultReactionEmoji = forumChannel.defaultReactionEmoji;
+    baseChannel.defaultSortOrder = forumChannel.defaultSortOrder;
+    baseChannel.defaultForumLayout = forumChannel.defaultForumLayout;
   }
 
   return baseChannel;

@@ -1,5 +1,12 @@
 // Type definitions for Discord MCP Server
 
+export interface ForumTag {
+  id: string;
+  name: string;
+  moderated: boolean;
+  emoji: { id: string | null; name: string | null } | null;
+}
+
 export interface DiscordChannel {
   id: string;
   name: string;
@@ -8,6 +15,11 @@ export interface DiscordChannel {
   position?: number;
   parentId?: string;
   parentName?: string;
+  // Forum channel specific fields
+  availableTags?: ForumTag[];
+  defaultReactionEmoji?: { id: string | null; name: string | null } | null;
+  defaultSortOrder?: number | null;
+  defaultForumLayout?: number | null;
 }
 
 export interface DiscordGuild {
