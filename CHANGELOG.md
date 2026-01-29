@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.4] - 2025-01-29
 
 ### Added
-- GitHub Actions workflow for automated publishing to npm using OIDC trusted publishers
+- GitHub Actions workflow for automated publishing to npm and mcp-registry using OIDC trusted publishers
 - NPM_OIDC_SETUP.md documentation for setting up automated publishing
 
 ### Changed
