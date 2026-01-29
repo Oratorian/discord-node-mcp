@@ -7,13 +7,21 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 ### Guild/Server Management
 - `discord_list_guilds` - List all servers the bot has access to
 - `discord_get_guild` - Get detailed info about a specific server
+- `discord_edit_guild` - Edit server settings (name, verification level, system channels, etc.)
+- `discord_leave_guild` - Leave a server
 
 ### Channel Management
 - `discord_list_channels` - List channels in a server (filter by type)
-- `discord_get_channel` - Get channel details
-- `discord_create_channel` - Create text/voice channels **and categories**
-- `discord_edit_channel` - Edit channel name, topic, position, category, and more
+- `discord_get_channel` - Get channel details (includes forum tags for forum channels)
+- `discord_create_channel` - Create text/voice/forum channels and categories
+- `discord_edit_channel` - Edit channel name, topic, position, category, forum tags, and more
 - `discord_delete_channel` - Delete a channel or category
+
+### Forum Channel Features
+- Create forum channels with `type: "forum"`
+- Set default reaction emoji, sort order, and layout
+- Manage forum tags (create, edit, delete)
+- Tags support custom emojis and moderation settings
 
 ### Permission Management
 - `discord_set_channel_permissions` - Set permission overrides for roles/members on channels
@@ -39,6 +47,8 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_ban_member` - Ban a member (with message deletion option)
 - `discord_unban_member` - Unban a user
 - `discord_set_nickname` - Set/clear member nickname
+- `discord_move_member` - Move member to a different voice channel
+- `discord_timeout_member` - Timeout/mute a member (up to 28 days)
 
 ### Role Management
 - `discord_list_roles` - List all server roles
@@ -50,11 +60,29 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_set_role_positions` - Reorder role hierarchy
 
 ### Server Administration
-- `discord_edit_guild` - Edit server settings (name, verification level, system channels, etc.)
-- `discord_timeout_member` - Timeout/mute a member (up to 28 days)
 - `discord_list_bans` - List all banned users
 - `discord_prune_members` - Remove inactive members (with dry-run option)
 - `discord_get_audit_log` - View audit log entries
+
+### Community Features
+- `discord_get_community_settings` - View community settings (rules channel, features, etc.)
+- `discord_setup_community` - Configure community channels (rules, updates, safety alerts)
+
+### Welcome Screen
+- `discord_get_welcome_screen` - Get welcome screen configuration
+- `discord_edit_welcome_screen` - Edit welcome screen (description, channels, emojis)
+
+### Onboarding
+- `discord_get_onboarding` - Get onboarding configuration
+- `discord_edit_onboarding` - Edit existing onboarding settings
+- `discord_setup_onboarding` - Setup onboarding from scratch (prompts, default channels, roles)
+
+### Auto Moderation
+- `discord_list_automod_rules` - List auto moderation rules
+- `discord_get_automod_rule` - Get details of an auto mod rule
+- `discord_create_automod_rule` - Create auto moderation rule
+- `discord_edit_automod_rule` - Edit auto moderation rule
+- `discord_delete_automod_rule` - Delete auto moderation rule
 
 ### Emoji Management
 - `discord_list_emojis` - List custom emojis
@@ -95,7 +123,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 
 ### 2. Invite the Bot to Your Server
 
-1. Go to OAuth2 → URL Generator
+1. Go to OAuth2 -> URL Generator
 2. Select scopes: `bot`, `applications.commands`
 3. Select bot permissions (choose based on features you need):
 
@@ -182,6 +210,7 @@ The server supports loading environment variables from a `.env` file in the curr
 DISCORD_BOT_TOKEN=your_bot_token_here
 TRANSPORT=http
 PORT=3000
+HOST=localhost
 ```
 
 | Variable | Description | Default |
@@ -189,6 +218,7 @@ PORT=3000
 | `DISCORD_BOT_TOKEN` | Your Discord bot token (required) | - |
 | `TRANSPORT` | Transport mode: `stdio` or `http` | `stdio` |
 | `PORT` | HTTP server port (when using http transport) | `3000` |
+| `HOST` | HTTP server host (use `0.0.0.0` for remote access) | `localhost` |
 
 ### HTTP Transport
 
@@ -196,17 +226,17 @@ For remote access, run the server with HTTP transport enabled:
 
 **Linux/macOS:**
 ```bash
-DISCORD_BOT_TOKEN=your_token TRANSPORT=http PORT=3000 discord-mcp-server
+DISCORD_BOT_TOKEN=your_token TRANSPORT=http PORT=3000 HOST=0.0.0.0 discord-mcp-server
 ```
 
 **Windows (Command Prompt):**
 ```cmd
-set DISCORD_BOT_TOKEN=your_token && set TRANSPORT=http && set PORT=3000 && discord-mcp-server
+set DISCORD_BOT_TOKEN=your_token && set TRANSPORT=http && set PORT=3000 && set HOST=0.0.0.0 && discord-mcp-server
 ```
 
 **Windows (PowerShell):**
 ```powershell
-$env:DISCORD_BOT_TOKEN="your_token"; $env:TRANSPORT="http"; $env:PORT="3000"; discord-mcp-server
+$env:DISCORD_BOT_TOKEN="your_token"; $env:TRANSPORT="http"; $env:PORT="3000"; $env:HOST="0.0.0.0"; discord-mcp-server
 ```
 
 **Or use a `.env` file** (works on all platforms):
@@ -228,6 +258,85 @@ Then configure your MCP client to connect via HTTP:
 ```
 
 ## Tool Examples
+
+### Create a Forum Channel with Tags
+
+```json
+{
+  "tool": "discord_create_channel",
+  "params": {
+    "guild_id": "1234567890123456789",
+    "name": "help-forum",
+    "type": "forum",
+    "topic": "Ask questions and get help",
+    "default_reaction_emoji": "✅",
+    "default_sort_order": "latest_activity",
+    "default_forum_layout": "list_view",
+    "available_tags": [
+      { "name": "Solved", "emoji_name": "✅", "moderated": false },
+      { "name": "Bug", "emoji_name": "🐛", "moderated": false },
+      { "name": "Question", "emoji_name": "❓", "moderated": false },
+      { "name": "Announcement", "emoji_name": "📢", "moderated": true }
+    ]
+  }
+}
+```
+
+### Setup Server Onboarding
+
+```json
+{
+  "tool": "discord_setup_onboarding",
+  "params": {
+    "guild_id": "1234567890123456789",
+    "default_channel_ids": ["1111111111111111111"],
+    "prompts": [
+      {
+        "type": "multiple_choice",
+        "title": "What are you interested in?",
+        "single_select": false,
+        "required": true,
+        "options": [
+          { "title": "Gaming", "emoji_name": "🎮", "role_ids": ["2222222222222222222"] },
+          { "title": "Tech", "emoji_name": "💻", "role_ids": ["3333333333333333333"] }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Configure Community Settings
+
+```json
+{
+  "tool": "discord_setup_community",
+  "params": {
+    "guild_id": "1234567890123456789",
+    "rules_channel_id": "1111111111111111111",
+    "public_updates_channel_id": "2222222222222222222",
+    "description": "A friendly gaming community",
+    "preferred_locale": "en-US"
+  }
+}
+```
+
+### Edit Welcome Screen
+
+```json
+{
+  "tool": "discord_edit_welcome_screen",
+  "params": {
+    "guild_id": "1234567890123456789",
+    "enabled": true,
+    "description": "Welcome to our server!",
+    "welcome_channels": [
+      { "channel_id": "1111111111111111111", "description": "Read the rules", "emoji_name": "📜" },
+      { "channel_id": "2222222222222222222", "description": "Introduce yourself", "emoji_name": "👋" }
+    ]
+  }
+}
+```
 
 ### Create a Category
 
@@ -361,6 +470,7 @@ Depending on which tools you use, your bot needs these permissions:
 | Webhooks | Manage Webhooks |
 | Events | Manage Events |
 | Audit Log | View Audit Log |
+| Community/Onboarding | Manage Guild |
 
 ## Tool Examples
 
