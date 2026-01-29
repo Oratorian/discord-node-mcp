@@ -87,7 +87,7 @@ Returns:
         const text = formatResponse(
           Array.from(roles.values()),
           params.response_format,
-          (items) => items.map(roleToMarkdown).join("\n\n")
+          roleToMarkdown
         );
 
         return {

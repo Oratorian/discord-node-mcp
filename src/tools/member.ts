@@ -67,7 +67,7 @@ Returns:
         const text = formatResponse(
           formatted,
           params.response_format,
-          (items: DiscordMember[]) => items.map(memberToMarkdown).join("\n\n")
+          memberToMarkdown
         );
 
         return {

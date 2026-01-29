@@ -48,7 +48,7 @@ Returns:
         const text = formatResponse(
           guilds,
           params.response_format,
-          (items) => items.map(guildToMarkdown).join("\n\n")
+          guildToMarkdown
         );
 
         return {

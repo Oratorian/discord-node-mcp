@@ -66,9 +66,7 @@ Returns:
         const result = formatResponse(
           eventList,
           params.response_format,
-          (items) => items.map(e =>
-            `**${e.name}** (ID: ${e.id})\nStatus: ${e.status}\nStart: ${e.scheduledStartTime}\nLocation: ${e.location || e.channel || 'TBD'}\nAttending: ${e.userCount || 0}`
-          ).join('\n\n')
+          (e) => `**${e.name}** (ID: ${e.id})\nStatus: ${e.status}\nStart: ${e.scheduledStartTime}\nLocation: ${e.location || e.channel || 'TBD'}\nAttending: ${e.userCount || 0}`
         );
 
         return {

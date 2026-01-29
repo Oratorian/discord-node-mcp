@@ -127,7 +127,7 @@ Returns:
         const text = formatResponse(
           Array.from(formatted.values()) as DiscordMessage[],
           params.response_format,
-          (items: DiscordMessage[]) => items.map(messageToMarkdown).join("\n\n---\n\n")
+          messageToMarkdown
         );
 
         return {

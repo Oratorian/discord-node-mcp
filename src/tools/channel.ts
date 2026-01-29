@@ -104,7 +104,7 @@ Returns:
         const text = formatResponse(
           formatted,
           params.response_format,
-          (items) => items.map(channelToMarkdown).join("\n\n")
+          channelToMarkdown
         );
 
         return {

@@ -284,7 +284,7 @@ Returns:
         const result = formatResponse(
           banList,
           params.response_format,
-          (items) => items.map(b => `**${b.username}** (${b.userId})\nReason: ${b.reason}`).join('\n\n')
+          (b) => `**${b.username}** (${b.userId})\nReason: ${b.reason}`
         );
 
         return {
@@ -430,9 +430,7 @@ Returns:
         const result = formatResponse(
           entries,
           params.response_format,
-          (items) => items.map(e =>
-            `**Action ${e.action}** by ${e.executor}\nTarget: ${e.target}\nReason: ${e.reason}\nTime: ${e.createdAt}`
-          ).join('\n\n')
+          (e) => `**Action ${e.action}** by ${e.executor}\nTarget: ${e.target}\nReason: ${e.reason}\nTime: ${e.createdAt}`
         );
 
         return {
@@ -492,7 +490,7 @@ Returns:
         const text = formatResponse(
           ruleList,
           params.response_format,
-          (items) => items.map(r => `**${r.name}** (${r.id})\nEnabled: ${r.enabled}\nTrigger: ${r.triggerType}\nActions: ${r.actions.map(a => a.type).join(', ')}`).join('\n\n')
+          (r) => `**${r.name}** (${r.id})\nEnabled: ${r.enabled}\nTrigger: ${r.triggerType}\nActions: ${r.actions.map(a => a.type).join(', ')}`
         );
 
         return {

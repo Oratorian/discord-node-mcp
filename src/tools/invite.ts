@@ -65,9 +65,7 @@ Returns:
         const result = formatResponse(
           inviteList,
           params.response_format,
-          (items) => items.map(i =>
-            `**${i.code}** - #${i.channel}\nUses: ${i.uses}/${i.maxUses} | Expires: ${i.expiresAt}\nCreated by: ${i.inviter}`
-          ).join('\n\n')
+          (i) => `**${i.code}** - #${i.channel}\nUses: ${i.uses}/${i.maxUses} | Expires: ${i.expiresAt}\nCreated by: ${i.inviter}`
         );
 
         return {

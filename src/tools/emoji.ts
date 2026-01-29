@@ -68,7 +68,7 @@ Returns:
         const result = formatResponse(
           emojis,
           params.response_format,
-          (items) => items.map(e => `${e.animated ? '(animated) ' : ''}**${e.name}** - ID: ${e.id}`).join('\n')
+          (e) => `${e.animated ? '(animated) ' : ''}**${e.name}** - ID: ${e.id}`
         );
 
         return {
@@ -240,7 +240,7 @@ Returns:
         const result = formatResponse(
           stickerList,
           params.response_format,
-          (items) => items.map(s => `**${s.name}** (ID: ${s.id})\nDescription: ${s.description || 'None'}\nTags: ${s.tags || 'None'}`).join('\n\n')
+          (s) => `**${s.name}** (ID: ${s.id})\nDescription: ${s.description || 'None'}\nTags: ${s.tags || 'None'}`
         );
 
         return {

@@ -210,7 +210,7 @@ export function truncateIfNeeded(text: string, limit: number = CHARACTER_LIMIT):
  * Format response based on format preference
  */
 export function formatResponse<T>(
-  data: T,
+  data: T | T[],
   format: ResponseFormat,
   markdownFormatter: (item: T) => string
 ): string {

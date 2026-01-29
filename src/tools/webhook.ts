@@ -80,7 +80,7 @@ Returns:
         const result = formatResponse(
           webhookList,
           params.response_format,
-          (items) => items.map(w => `**${w.name}** (ID: ${w.id})\nChannel: <#${w.channel}>\nOwner: ${w.owner}`).join('\n\n')
+          (w) => `**${w.name}** (ID: ${w.id})\nChannel: <#${w.channel}>\nOwner: ${w.owner}`
         );
 
         return {
