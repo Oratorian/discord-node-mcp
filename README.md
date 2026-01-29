@@ -156,13 +156,13 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 **Option A: Install globally from npm**
 
 ```bash
-npm install -g @mahesvara/discord-mcp-server
+npm install -g @mahesvara/discord-mcpserver
 ```
 
 **Option B: Run directly with npx (no install required)**
 
 ```bash
-npx @mahesvara/discord-mcp-server
+npx @mahesvara/discord-mcpserver
 ```
 
 ## Usage
@@ -177,7 +177,7 @@ Add to your MCP client configuration (e.g., Claude Desktop or Claude Code):
 {
   "mcpServers": {
     "discord": {
-      "command": "discord-mcp-server",
+      "command": "discord-mcpserver",
       "env": {
         "DISCORD_BOT_TOKEN": "your_bot_token_here"
       }
@@ -193,7 +193,7 @@ Add to your MCP client configuration (e.g., Claude Desktop or Claude Code):
   "mcpServers": {
     "discord": {
       "command": "npx",
-      "args": ["-y", "@mahesvara/discord-mcp-server"],
+      "args": ["-y", "@mahesvara/discord-mcpserver"],
       "env": {
         "DISCORD_BOT_TOKEN": "your_bot_token_here"
       }
@@ -226,22 +226,22 @@ For remote access, run the server with HTTP transport enabled:
 
 **Linux/macOS:**
 ```bash
-DISCORD_BOT_TOKEN=your_token TRANSPORT=http PORT=3000 HOST=0.0.0.0 discord-mcp-server
+DISCORD_BOT_TOKEN=your_token TRANSPORT=http PORT=3000 HOST=0.0.0.0 discord-mcpserver
 ```
 
 **Windows (Command Prompt):**
 ```cmd
-set DISCORD_BOT_TOKEN=your_token && set TRANSPORT=http && set PORT=3000 && set HOST=0.0.0.0 && discord-mcp-server
+set DISCORD_BOT_TOKEN=your_token && set TRANSPORT=http && set PORT=3000 && set HOST=0.0.0.0 && discord-mcpserver
 ```
 
 **Windows (PowerShell):**
 ```powershell
-$env:DISCORD_BOT_TOKEN="your_token"; $env:TRANSPORT="http"; $env:PORT="3000"; $env:HOST="0.0.0.0"; discord-mcp-server
+$env:DISCORD_BOT_TOKEN="your_token"; $env:TRANSPORT="http"; $env:PORT="3000"; $env:HOST="0.0.0.0"; discord-mcpserver
 ```
 
 **Or use a `.env` file** (works on all platforms):
 ```bash
-discord-mcp-server
+discord-mcpserver
 ```
 
 Then configure your MCP client to connect via HTTP:
