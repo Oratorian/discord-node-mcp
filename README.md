@@ -1,3 +1,5 @@
+![Build](https://img.shields.io/github/actions/workflow/status/Oratorian/discord-node-mcp/node.js.yml?branch=main&style=for-the-badge&label=Node%20BuildTest) ![License](https://img.shields.io/github/license/Oratorian/discord-node-mcp?style=for-the-badge) ![TAG](https://img.shields.io/github/v/tag/Oratorian/discord-node-mcp?style=for-the-badge&label=Release)
+
 # Discord MCP Server
 
 An MCP (Model Context Protocol) server that enables LLMs to control Discord servers via a bot token. This server provides comprehensive Discord management tools including sending messages, managing members, roles, channels, permissions, and more.
