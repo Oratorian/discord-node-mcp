@@ -9,10 +9,12 @@ import {
   ChannelType,
   PermissionsBitField,
   Channel,
-  GuildChannel
+  GuildChannel,
+  ThreadChannel
 } from "discord.js";
 import {
   DiscordChannel,
+  DiscordForumPost,
   DiscordGuild,
   DiscordMember,
   DiscordRole,
@@ -126,6 +128,32 @@ export function formatChannel(channel: GuildChannel): DiscordChannel {
 }
 
 /**
+ * Format a forum post (thread) for response
+ */
+export function formatForumPost(thread: ThreadChannel): DiscordForumPost {
+  const post: DiscordForumPost = {
+    id: thread.id,
+    name: thread.name,
+    appliedTags: [...thread.appliedTags],
+    archived: thread.archived ?? false,
+    locked: thread.locked ?? false,
+    pinned: thread.flags.has("Pinned"),
+    messageCount: thread.messageCount ?? undefined,
+    createdAt: thread.createdAt?.toISOString(),
+    archiveTimestamp: thread.archivedAt?.toISOString(),
+  };
+
+  if (thread.ownerId) post.ownerId = thread.ownerId;
+
+  if (thread.parent) {
+    post.parentId = thread.parent.id;
+    post.parentName = thread.parent.name;
+  }
+
+  return post;
+}
+
+/**
  * Format a member for response
  */
 export function formatMember(member: GuildMember): DiscordMember {
@@ -235,6 +263,22 @@ export function channelToMarkdown(channel: DiscordChannel): string {
 - **Type**: ${channel.type}`;
   if (channel.topic) md += `\n- **Topic**: ${channel.topic}`;
   if (channel.parentName) md += `\n- **Category**: ${channel.parentName}`;
+  return md;
+}
+
+export function forumPostToMarkdown(post: DiscordForumPost): string {
+  let md = `### 🧵 ${post.name}
+- **ID**: ${post.id}`;
+  if (post.parentName) md += `\n- **Forum**: ${post.parentName}`;
+  if (post.ownerId) md += `\n- **Author ID**: ${post.ownerId}`;
+  if (post.appliedTags.length > 0) md += `\n- **Tags**: ${post.appliedTags.join(", ")}`;
+  if (post.messageCount !== undefined) md += `\n- **Messages**: ${post.messageCount}`;
+  const state: string[] = [];
+  if (post.pinned) state.push("📌 Pinned");
+  if (post.archived) state.push("🗄️ Archived");
+  if (post.locked) state.push("🔒 Locked");
+  md += `\n- **Status**: ${state.length > 0 ? state.join(", ") : "Active"}`;
+  if (post.createdAt) md += `\n- **Created**: ${new Date(post.createdAt).toLocaleString()}`;
   return md;
 }
 

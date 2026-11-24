@@ -23,6 +23,14 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - Manage forum tags (create, edit, delete)
 - Tags support custom emojis and moderation settings
 
+### Forum Post Management
+- `discord_create_forum_post` - Create a new post (thread) in a forum channel with a title, opening message, applied tags, and auto-archive duration
+- `discord_list_forum_posts` - List posts in a forum channel (optionally including archived posts)
+- `discord_get_forum_post` - Get a single post's details (tags, archived/locked/pinned status, message count)
+- `discord_edit_forum_post` - Moderate a post: rename, retag, archive/reopen, lock/unlock, or pin/unpin
+- `discord_delete_forum_post` - Permanently delete a forum post
+- To reply within an existing post, use `discord_send_message` with the post's ID as the `channel_id`
+
 ### Permission Management
 - `discord_set_channel_permissions` - Set permission overrides for roles/members on channels
 - `discord_remove_channel_permissions` - Remove permission overrides

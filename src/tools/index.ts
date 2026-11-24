@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerGuildTools } from "./guild.js";
 import { registerChannelTools } from "./channel.js";
+import { registerForumTools } from "./forum.js";
 import { registerMessageTools } from "./message.js";
 import { registerMemberTools } from "./member.js";
 import { registerRoleTools } from "./role.js";
@@ -14,6 +15,7 @@ import { registerCommunityTools } from "./community.js";
 export function registerAllTools(server: McpServer) {
   registerGuildTools(server);
   registerChannelTools(server);
+  registerForumTools(server);
   registerMessageTools(server);
   registerMemberTools(server);
   registerRoleTools(server);

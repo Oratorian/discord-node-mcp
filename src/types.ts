@@ -22,6 +22,21 @@ export interface DiscordChannel {
   defaultForumLayout?: number | null;
 }
 
+export interface DiscordForumPost {
+  id: string;
+  name: string;
+  parentId?: string;
+  parentName?: string;
+  ownerId?: string;
+  appliedTags: string[];
+  archived: boolean;
+  locked: boolean;
+  pinned: boolean;
+  messageCount?: number;
+  createdAt?: string;
+  archiveTimestamp?: string;
+}
+
 export interface DiscordGuild {
   id: string;
   name: string;

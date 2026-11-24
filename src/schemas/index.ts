@@ -2,6 +2,7 @@
 export * from "./common.js";
 export * from "./guild.js";
 export * from "./channel.js";
+export * from "./forum.js";
 export * from "./message.js";
 export * from "./member.js";
 export * from "./role.js";
