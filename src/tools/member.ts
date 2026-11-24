@@ -239,8 +239,12 @@ Returns:
           };
         }
 
-        const member = await guild.members.fetch(params.user_id);
-        await member.setNickname(params.nickname ?? null);
+        if (params.user_id === client.user?.id) {
+          await guild.members.editMe({ nick: params.nickname || null });
+        } else {
+          const member = await guild.members.fetch(params.user_id);
+          await member.setNickname(params.nickname ?? null);
+        }
 
         const action = params.nickname ? `set to "${params.nickname}"` : "reset";
         return {

@@ -1,5 +1,7 @@
+import { once } from "node:events";
 import {
   Client,
+  Events,
   GatewayIntentBits,
   TextChannel,
   Guild,
@@ -23,17 +25,12 @@ import {
 } from "../types.js";
 import { CHARACTER_LIMIT } from "../constants.js";
 
-let client: Client | null = null;
-let isReady = false;
+let clientPromise: Promise<Client> | undefined;
 
 /**
  * Initialize the Discord client with bot token
  */
-export async function initializeClient(): Promise<Client> {
-  if (client && isReady) {
-    return client;
-  }
-
+async function initializeClient(): Promise<Client> {
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) {
     throw new Error(
@@ -42,7 +39,7 @@ export async function initializeClient(): Promise<Client> {
     );
   }
 
-  client = new Client({
+  const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
@@ -52,29 +49,34 @@ export async function initializeClient(): Promise<Client> {
     ],
   });
 
-  return new Promise((resolve, reject) => {
-    client!.once("ready", () => {
-      isReady = true;
-      console.error(`Discord bot logged in as ${client!.user?.tag}`);
-      resolve(client!);
-    });
-
-    client!.once("error", (error) => {
-      reject(new Error(`Discord client error: ${error.message}`));
-    });
-
-    client!.login(token).catch(reject);
-  });
+  const ready = new AbortController();
+  try {
+    await Promise.all([
+      once(client, Events.ClientReady, { signal: ready.signal }),
+      client.login(token),
+    ]);
+    client.on(Events.Error, error => console.error(`Discord client error: ${error.message}`));
+    console.error(`Discord bot logged in as ${client.user?.tag}`);
+    return client;
+  } catch (error) {
+    await client.destroy();
+    throw error;
+  } finally {
+    ready.abort();
+  }
 }
 
 /**
  * Get the initialized Discord client
  */
 export async function getClient(): Promise<Client> {
-  if (!client || !isReady) {
-    return initializeClient();
+  if (!clientPromise) {
+    clientPromise = initializeClient().catch(error => {
+      clientPromise = undefined;
+      throw error;
+    });
   }
-  return client;
+  return clientPromise;
 }
 
 /**

@@ -3,13 +3,11 @@ import "dotenv/config";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from "express";
-import { server } from "./server.js";
-import { registerAllTools } from "./tools/index.js";
-
-// Register all tools
-registerAllTools(server);
+import { createServer } from "./server.js";
+import { MAX_PROFILE_IMAGE_BASE64_LENGTH } from "./constants.js";
 
 async function runStdio(): Promise<void> {
+  const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("Discord MCP server running on stdio");
@@ -17,16 +15,21 @@ async function runStdio(): Promise<void> {
 
 async function runHTTP(): Promise<void> {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: 2 * MAX_PROFILE_IMAGE_BASE64_LENGTH + 128 * 1024 }));
 
-  app.post("/mcp", async (req, res) => {
+  app.post("/mcp", async (req, res, next) => {
+    const server = createServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
     });
-    res.on("close", () => transport.close());
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
+    res.on("close", () => void server.close());
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      next(error);
+    }
   });
 
   const port = parseInt(process.env.PORT || "3000");

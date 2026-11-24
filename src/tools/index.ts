@@ -11,6 +11,7 @@ import { registerWebhookTools } from "./webhook.js";
 import { registerInviteTools } from "./invite.js";
 import { registerEventTools } from "./event.js";
 import { registerCommunityTools } from "./community.js";
+import { registerProfileTools } from "./profile.js";
 
 export function registerAllTools(server: McpServer) {
   registerGuildTools(server);
@@ -25,4 +26,5 @@ export function registerAllTools(server: McpServer) {
   registerInviteTools(server);
   registerEventTools(server);
   registerCommunityTools(server);
+  registerProfileTools(server);
 }

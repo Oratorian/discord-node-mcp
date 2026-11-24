@@ -117,6 +117,13 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_create_event` - Create a scheduled event (stage, voice, or external)
 - `discord_delete_event` - Delete a scheduled event
 
+### Bot Profile
+
+- `discord_update_bot_profile` updates the bot's global `avatar` and `banner`.
+- `discord_update_bot_guild_profile` takes a `guild_id` and updates the bot's `nickname`, `avatar`, or `banner` in that server. Changing its nickname requires **Change Nickname** in that server.
+
+Provide at least one profile field per call. Omit a field to keep it or pass `null` to clear it. Each image can be a PNG, JPEG, or GIF up to 10 MiB, supplied as a base64 data URI or an HTTPS URL from `cdn.discordapp.com` or `media.discordapp.net`. For example, call `discord_update_bot_guild_profile` with `{"guild_id":"123456789012345678","nickname":"Party Bot","banner":null}` to set the nickname and clear the server banner.
+
 ## Setup
 
 ### 1. Create a Discord Bot
@@ -146,6 +153,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
    **Member Management:**
    - Kick Members
    - Ban Members
+   - Change Nickname (for the bot's own server nickname)
    - Manage Nicknames
    - Moderate Members (for timeouts)
 
