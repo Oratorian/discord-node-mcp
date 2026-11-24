@@ -19,7 +19,7 @@ import {
   truncateIfNeeded,
 } from "../services/discord.js";
 import { ChannelType, ForumChannel, ThreadChannel } from "discord.js";
-import { DiscordForumPost } from "../types.js";
+import { ResponseFormat } from "../types.js";
 
 /**
  * Fetch a channel by ID, falling back to an API fetch when it is not cached.
@@ -143,13 +143,9 @@ Returns:
 
         const formatted = Array.from(threads.values()).map((t) => formatForumPost(t));
 
-        const text = formatResponse(
-          formatted,
-          params.response_format,
-          (items: DiscordForumPost[]) => items.length > 0
-            ? items.map(forumPostToMarkdown).join("\n\n---\n\n")
-            : "No forum posts found in this channel."
-        );
+        const text = formatted.length === 0 && params.response_format === ResponseFormat.MARKDOWN
+          ? "No forum posts found in this channel."
+          : formatResponse(formatted, params.response_format, forumPostToMarkdown);
 
         return {
           content: [{ type: "text", text: truncateIfNeeded(text) }],
