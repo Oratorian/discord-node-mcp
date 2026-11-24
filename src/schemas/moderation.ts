@@ -1,3 +1,4 @@
+import { AuditLogEvent } from "discord.js";
 import { z } from "zod";
 import { GuildIdSchema, UserIdSchema, ChannelIdSchema, RoleIdSchema, AutoModRuleIdSchema, ResponseFormatSchema } from "./common.js";
 
@@ -70,6 +71,14 @@ export const PruneMembersSchema = z.object({
     .describe("If true, only returns count without actually pruning")
 }).strict();
 
+const auditLogEvents = Object.entries(AuditLogEvent).flatMap(([name, code]) =>
+  typeof code === "number" ? [[name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase(), code] as const] : []
+);
+export const auditLogEventCodes = Object.fromEntries(auditLogEvents);
+export const auditLogEventNames = Object.fromEntries(auditLogEvents.map(([name, code]) => [code, name]));
+
+const AuditLogEntryIdSchema = z.string().regex(/^\d{17,20}$/, "Expected a Discord audit log entry ID");
+
 export const GetAuditLogSchema = z.object({
   guild_id: GuildIdSchema,
   limit: z.number()
@@ -80,12 +89,19 @@ export const GetAuditLogSchema = z.object({
     .describe("Number of entries to retrieve"),
   user_id: UserIdSchema.optional()
     .describe("Filter by user who performed actions"),
-  action_type: z.number()
-    .int()
+  action_type: z.union([z.number().int(), z.enum(Object.keys(auditLogEventCodes))])
     .optional()
-    .describe("Filter by action type (Discord audit log action type number)"),
+    .describe("Filter by Discord audit event code or name, such as CHANNEL_POSITION_UPDATE"),
+  before: AuditLogEntryIdSchema.optional()
+    .describe("Return older entries before this audit log ID, newest first"),
+  after: z.union([AuditLogEntryIdSchema, z.literal("0")]).optional()
+    .describe("Return newer entries after this audit log ID, oldest first. Use '0' to start at the oldest entry."),
+  include_pagination: z.boolean().default(false)
+    .describe("Include a continuation cursor with the results even when no before or after cursor is supplied"),
   response_format: ResponseFormatSchema
-}).strict();
+}).strict().refine(({ before, after }) => before === undefined || after === undefined, {
+  message: "Provide either before or after",
+});
 
 // Auto Moderation schemas
 export const ListAutoModRulesSchema = z.object({

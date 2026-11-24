@@ -13,7 +13,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_leave_guild` - Leave a server
 
 ### Channel Management
-- `discord_list_channels` - List channels in a server (filter by type)
+- `discord_list_channels` - List channels visible to the bot in a server (filter by type)
 - `discord_get_channel` - Get channel details (includes forum tags for forum channels)
 - `discord_create_channel` - Create text/voice/forum channels and categories
 - `discord_edit_channel` - Edit channel name, topic, position, category, forum tags, and more
@@ -25,25 +25,58 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - Manage forum tags (create, edit, delete)
 - Tags support custom emojis and moderation settings
 
+### Forum Post Management
+- `discord_create_forum_post` - Create a forum post with a title, a rich opening message, applied tags, and an auto-archive duration
+- `discord_list_forum_posts` - List posts in a forum channel (optionally including archived posts)
+- `discord_get_forum_post` - Get a single post's details (tags, archived/locked/pinned status, message count)
+- `discord_edit_forum_post` - Moderate a post: rename, retag, archive/reopen, lock/unlock, or pin/unpin
+- `discord_delete_forum_post` - Permanently delete a forum post
+- To reply within an existing post, use `discord_send_message` with the post's ID as the `channel_id`
+
 ### Permission Management
 - `discord_set_channel_permissions` - Set permission overrides for roles/members on channels
 - `discord_remove_channel_permissions` - Remove permission overrides
 - `discord_get_channel_permissions` - View all permission overrides on a channel
 - `discord_sync_channel_permissions` - Sync channel permissions with parent category
+- `discord_get_member_permissions` and `discord_get_role_permissions` - Get Discord's effective permissions for a member or role. Use `scope: { "guild_id": "..." }` for server permissions or `scope: { "channel_id": "..." }` for channel permissions. Set `implicit: false` in the channel scope to skip implicit permission masking.
 
 ### Message Operations
-- `discord_send_message` - Send messages (with optional reply)
+- `discord_send_message` - Send messages with optional replies, embeds, files, and link buttons
 - `discord_get_messages` - Retrieve channel messages (with pagination)
-- `discord_edit_message` - Edit bot's messages
+- `discord_search_guild_messages` - Search server messages by text, author, channel, and other filters. Requires the Message Content intent and Read Message History.
+- `discord_edit_message` - Edit the bot's messages and their attachment descriptions or spoiler flags
 - `discord_delete_message` - Delete messages
 - `discord_add_reaction` - Add emoji reactions
 - `discord_remove_reaction` - Remove bot's reactions
 - `discord_pin_message` - Pin a message
 - `discord_unpin_message` - Unpin a message
-- `discord_get_pinned_messages` - Get all pinned messages
+- `discord_get_pinned_messages` - Get the first 50 pinned messages. Pass `limit` or `before` to receive pagination metadata, then use `next_before` to retrieve the next page.
+
+#### Rich messages and forum openings
+
+`discord_send_message` and `discord_create_forum_post` accept `content`, `embeds`, `link_buttons`, and `files`. Each link button takes a `label` and HTTPS or HTTP `url`. Each file takes a `filename`, raw `data_base64`, and optional `description` and `is_spoiler` fields. You can upload up to 10 files totaling 20 MiB per call.
+
+To ping only a release role, include its `<@&ROLE_ID>` mention in `content` and pass `allowed_mentions` with that role ID. An empty `allowed_mentions` object suppresses pings.
+
+```json
+{
+  "channel_id": "123456789012345678",
+  "content": "<@&234567890123456789> The release is ready.",
+  "allowed_mentions": { "role_ids": ["234567890123456789"] },
+  "link_buttons": [{ "label": "Download", "url": "https://example.com/releases" }]
+}
+```
+
+To change an existing file, find its ID in `discord_get_messages` under `attachmentDetails`, then pass `attachment_updates` with the `attachment_id` and a new `description`, `is_spoiler`, or both to `discord_edit_message`. A `null` description clears the alt text. New `files` are appended and existing files are retained.
+
+### Polls
+
+- `discord_create_poll` posts a native poll. Pass a `channel_id`, a `question`, and up to 10 `answers` such as `[{"text":"Friday"},{"text":"Saturday"}]`. Set `duration_hours` to change the 24-hour default or `allow_multiselect` to allow multiple choices.
+- `discord_get_poll` reads the poll and its latest vote counts by `channel_id` and `message_id`. A `null` count means Discord has yet to provide results.
+- `discord_end_poll` closes a poll the bot created. Use `discord_get_poll` again for the final tally if Discord is still counting votes.
 
 ### Member Management
-- `discord_list_members` - List server members (with pagination)
+- `discord_list_members` - List server members. Pass the highest returned user ID as `after` to get the next page.
 - `discord_get_member` - Get member details
 - `discord_kick_member` - Kick a member
 - `discord_ban_member` - Ban a member (with message deletion option)
@@ -54,6 +87,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 
 ### Role Management
 - `discord_list_roles` - List all server roles
+- `discord_get_guild_role_member_counts` - Get Discord's member counts for each server role
 - `discord_create_role` - Create a new role
 - `discord_edit_role` - Edit role name, color, permissions, and settings
 - `discord_delete_role` - Delete a role
@@ -64,7 +98,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 ### Server Administration
 - `discord_list_bans` - List all banned users
 - `discord_prune_members` - Remove inactive members (with dry-run option)
-- `discord_get_audit_log` - View audit log entries
+- `discord_get_audit_log` - Filter audit entries by user or by a numeric or named `action_type`, such as `CHANNEL_POSITION_UPDATE` or `ROLE_POSITION_UPDATE`. Entries include Discord's event details, such as the count for merged reorder entries. Set `include_pagination: true` on the first page, then pass `next_before` as `before` for older entries or `next_after` as `after` for newer entries. To page from oldest to newest, start with `after: "0"`.
 
 ### Community Features
 - `discord_get_community_settings` - View community settings (rules channel, features, etc.)
@@ -98,7 +132,11 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 ### Invite Management
 - `discord_list_invites` - List active invites
 - `discord_create_invite` - Create channel invite
+- `discord_list_invite_target_users` - List the users eligible to accept a restricted invite
+- `discord_edit_invite_target_users` - Add or remove users from an invite using `invite_code`, `action` (`add` or `remove`), and `user_ids`
 - `discord_delete_invite` - Delete an invite
+
+Pass `target_user_ids` to `discord_create_invite` to limit acceptance to up to 1,000 specified users. Pass `role_ids` to grant roles when users accept. Either option creates a fresh invite code. Granting roles requires **Manage Roles** and sufficient role hierarchy. Removing a target user affects future acceptance of the invite.
 
 ### Webhook Management
 - `discord_list_webhooks` - List webhooks (guild or channel)
@@ -110,6 +148,13 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_list_events` - List scheduled events
 - `discord_create_event` - Create a scheduled event (stage, voice, or external)
 - `discord_delete_event` - Delete a scheduled event
+
+### Bot Profile
+
+- `discord_update_bot_profile` updates the bot's global `avatar` and `banner`.
+- `discord_update_bot_guild_profile` takes a `guild_id` and updates the bot's `nickname`, `avatar`, or `banner` in that server. Changing its nickname requires **Change Nickname** in that server.
+
+Provide at least one profile field per call. Omit a field to keep it or pass `null` to clear it. Each image can be a PNG, JPEG, or GIF up to 10 MiB, supplied as a base64 data URI or an HTTPS URL from `cdn.discordapp.com` or `media.discordapp.net`. For example, call `discord_update_bot_guild_profile` with `{"guild_id":"123456789012345678","nickname":"Party Bot","banner":null}` to set the nickname and clear the server banner.
 
 ## Setup
 
@@ -133,27 +178,34 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
    - Manage Channels
    - Manage Roles
    - Manage Messages
+   - Pin Messages (for pinning and unpinning messages)
    - Read Message History
    - Send Messages
+   - Send Polls (for creating polls)
    - Add Reactions
 
    **Member Management:**
    - Kick Members
    - Ban Members
+   - Change Nickname (for the bot's own server nickname)
    - Manage Nicknames
    - Moderate Members (for timeouts)
 
    **Server Administration:**
    - Manage Guild (for server settings)
    - View Audit Log
-   - Manage Emojis and Stickers
+   - Create Expressions (for creating custom emoji)
+   - Manage Expressions (for managing custom emoji and stickers)
    - Manage Webhooks
-   - Manage Events
+   - Create Events (for creating scheduled events)
+   - Manage Events (for managing other scheduled events)
    - Create Instant Invite
 
 4. Copy the generated URL and open it to invite the bot
 
 ### 3. Install the MCP Server
+
+Requires Node.js 20 or later.
 
 **Option A: Install globally from npm**
 

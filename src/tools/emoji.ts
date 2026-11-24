@@ -87,7 +87,7 @@ Returns:
     "discord_create_emoji",
     {
       title: "Create Emoji",
-      description: `Create a custom emoji in a server.
+      description: `Create a custom emoji in a server. The bot needs CREATE_GUILD_EXPRESSIONS.
 
 Args:
   - guild_id (string): Discord server/guild ID

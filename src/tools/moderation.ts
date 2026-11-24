@@ -1,5 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
+  AuditLogEvent,
+  GuildAuditLogsEntry,
+  Routes,
+  SnowflakeUtil,
+  makeURLSearchParams,
+  type RESTGetAPIAuditLogResult,
+} from "discord.js";
+import {
   KickMemberSchema,
   BanMemberSchema,
   UnbanMemberSchema,
@@ -7,6 +15,8 @@ import {
   ListBansSchema,
   PruneMembersSchema,
   GetAuditLogSchema,
+  auditLogEventCodes,
+  auditLogEventNames,
   ListAutoModRulesSchema,
   GetAutoModRuleSchema,
   CreateAutoModRuleSchema,
@@ -30,6 +40,7 @@ import {
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
+import { ResponseFormat } from "../types.js";
 
 export function registerModerationTools(server: McpServer) {
   server.registerTool(
@@ -367,23 +378,11 @@ Returns:
     "discord_get_audit_log",
     {
       title: "Get Audit Log",
-      description: `Get the audit log for a server. Shows who did what actions.
+      description: `Get Discord audit log entries with actor, target, changes, and event details. Requires View Audit Log.
 
-Common action types:
-1=GuildUpdate, 10=ChannelCreate, 11=ChannelUpdate, 12=ChannelDelete,
-20=MemberKick, 22=MemberBanAdd, 23=MemberBanRemove, 24=MemberUpdate, 25=MemberRoleUpdate,
-30=RoleCreate, 31=RoleUpdate, 32=RoleDelete,
-72=MessageDelete, 73=MessageBulkDelete
+Filter by user ID and by event code or name, including CHANNEL_POSITION_UPDATE and ROLE_POSITION_UPDATE. Discord can merge repeated actions into one entry, with options.count giving the combined count for these events.
 
-Args:
-  - guild_id (string): Discord server/guild ID
-  - user_id (string, optional): Filter by user who performed action
-  - action_type (number, optional): Filter by action type
-  - limit (number): Number of entries (1-100, default 20)
-  - response_format ('json' | 'markdown'): Output format
-
-Returns:
-  Audit log entries with action, user, target, and changes`,
+Use before for older entries or after for newer entries. JSON returns an array by default. Set include_pagination or supply a cursor to get an object with entries and a continuation cursor when the page is full.`,
       inputSchema: GetAuditLogSchema,
       annotations: {
         readOnlyHint: true,
@@ -404,37 +403,58 @@ Returns:
           };
         }
 
-        const fetchOptions: { limit: number; user?: string; type?: number } = {
+        const action = typeof params.action_type === "string" ? auditLogEventCodes[params.action_type] : params.action_type;
+        const query = makeURLSearchParams({
           limit: params.limit,
+          user_id: params.user_id,
+          action_type: action,
+          before: params.before,
+          after: params.after,
+        });
+        const auditLogs = await client.rest.get(Routes.guildAuditLog(guild.id), { query }) as RESTGetAPIAuditLogResult;
+        const users = new Map(auditLogs.users.map(user => [user.id, user]));
+        const entries = auditLogs.audit_log_entries.map(entry => {
+          const { action_type, target_id, user_id } = entry;
+          const executor = user_id ? users.get(user_id) ?? client.users.cache.get(user_id) : undefined;
+          let target = "Unknown";
+          if (target_id) {
+            const cachedTarget = client.channels.cache.get(target_id) ?? guild.roles.cache.get(target_id)
+              ?? client.users.cache.get(target_id) ?? guild.emojis.cache.get(target_id);
+            target = cachedTarget?.toString() ?? (users.has(target_id) ? `<@${target_id}>` : target_id);
+          }
+          const isReorder = action_type === AuditLogEvent.ChannelPositionUpdate || action_type === AuditLogEvent.RolePositionUpdate;
+          return {
+            id: entry.id,
+            action: action_type,
+            actionName: auditLogEventNames[action_type],
+            actionType: isReorder ? "Update" : GuildAuditLogsEntry.actionType(action_type),
+            executor: executor?.username || "Unknown",
+            executorId: user_id ?? undefined,
+            target,
+            targetId: target_id,
+            reason: entry.reason || "No reason",
+            createdAt: new Date(SnowflakeUtil.timestampFrom(entry.id)).toISOString(),
+            changes: entry.changes?.map(c => ({ key: c.key, old: c.old_value, new: c.new_value })) ?? [],
+            options: entry.options,
+          };
+        });
+
+        const paginated = params.include_pagination || params.before !== undefined || params.after !== undefined;
+        const cursor = paginated && entries.length === params.limit ? entries.at(-1)?.id : undefined;
+        const cursorKey = params.after === undefined ? "next_before" : "next_after";
+        const markdown = () => {
+          const list = formatResponse(entries, ResponseFormat.MARKDOWN, entry => {
+            const details = entry.options ? `\n**Details** ${JSON.stringify(entry.options)}` : "";
+            return `**${entry.actionName ?? `Action ${entry.action}`}** by ${entry.executor}\n**Target** ${entry.target}\n**Reason** ${entry.reason}\n**Time** ${entry.createdAt}${details}`;
+          });
+          return cursor ? `Continue with ${cursorKey === "next_before" ? "before" : "after"} set to \`${cursor}\`.\n\n${list}` : list;
         };
-        if (params.user_id) fetchOptions.user = params.user_id;
-        if (params.action_type !== undefined) fetchOptions.type = params.action_type;
-
-        const auditLogs = await guild.fetchAuditLogs(fetchOptions);
-        const entries = auditLogs.entries.map(entry => ({
-          id: entry.id,
-          action: entry.action,
-          actionType: entry.actionType,
-          executor: entry.executor?.username || 'Unknown',
-          executorId: entry.executor?.id,
-          target: entry.target?.toString() || 'Unknown',
-          reason: entry.reason || 'No reason',
-          createdAt: entry.createdAt.toISOString(),
-          changes: entry.changes.map(c => ({
-            key: c.key,
-            old: c.old,
-            new: c.new,
-          })),
-        }));
-
-        const result = formatResponse(
-          entries,
-          params.response_format,
-          (e) => `**Action ${e.action}** by ${e.executor}\nTarget: ${e.target}\nReason: ${e.reason}\nTime: ${e.createdAt}`
-        );
+        const result = params.response_format === ResponseFormat.JSON
+          ? JSON.stringify(paginated ? { entries, [cursorKey]: cursor } : entries, null, 2)
+          : truncateIfNeeded(markdown());
 
         return {
-          content: [{ type: "text", text: truncateIfNeeded(result) }],
+          content: [{ type: "text", text: result }],
         };
       } catch (error) {
         return {

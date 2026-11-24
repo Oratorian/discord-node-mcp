@@ -1,5 +1,7 @@
+import { once } from "node:events";
 import {
   Client,
+  Events,
   GatewayIntentBits,
   TextChannel,
   Guild,
@@ -7,31 +9,31 @@ import {
   Role,
   Message,
   ChannelType,
+  AttachmentFlags,
   PermissionsBitField,
   Channel,
-  GuildChannel
+  GuildChannel,
+  ThreadChannel,
+  type APIMessage,
 } from "discord.js";
 import {
   DiscordChannel,
+  DiscordForumPost,
   DiscordGuild,
   DiscordMember,
   DiscordRole,
   DiscordMessage,
+  DiscordAttachment,
   ResponseFormat
 } from "../types.js";
 import { CHARACTER_LIMIT } from "../constants.js";
 
-let client: Client | null = null;
-let isReady = false;
+let clientPromise: Promise<Client> | undefined;
 
 /**
  * Initialize the Discord client with bot token
  */
-export async function initializeClient(): Promise<Client> {
-  if (client && isReady) {
-    return client;
-  }
-
+async function initializeClient(): Promise<Client> {
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) {
     throw new Error(
@@ -40,7 +42,7 @@ export async function initializeClient(): Promise<Client> {
     );
   }
 
-  client = new Client({
+  const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
@@ -50,29 +52,34 @@ export async function initializeClient(): Promise<Client> {
     ],
   });
 
-  return new Promise((resolve, reject) => {
-    client!.once("ready", () => {
-      isReady = true;
-      console.error(`Discord bot logged in as ${client!.user?.tag}`);
-      resolve(client!);
-    });
-
-    client!.once("error", (error) => {
-      reject(new Error(`Discord client error: ${error.message}`));
-    });
-
-    client!.login(token).catch(reject);
-  });
+  const ready = new AbortController();
+  try {
+    await Promise.all([
+      once(client, Events.ClientReady, { signal: ready.signal }),
+      client.login(token),
+    ]);
+    client.on(Events.Error, error => console.error(`Discord client error: ${error.message}`));
+    console.error(`Discord bot logged in as ${client.user?.tag}`);
+    return client;
+  } catch (error) {
+    await client.destroy();
+    throw error;
+  } finally {
+    ready.abort();
+  }
 }
 
 /**
  * Get the initialized Discord client
  */
 export async function getClient(): Promise<Client> {
-  if (!client || !isReady) {
-    return initializeClient();
+  if (!clientPromise) {
+    clientPromise = initializeClient().catch(error => {
+      clientPromise = undefined;
+      throw error;
+    });
   }
-  return client;
+  return clientPromise;
 }
 
 /**
@@ -126,6 +133,32 @@ export function formatChannel(channel: GuildChannel): DiscordChannel {
 }
 
 /**
+ * Format a forum post (thread) for response
+ */
+export function formatForumPost(thread: ThreadChannel): DiscordForumPost {
+  const post: DiscordForumPost = {
+    id: thread.id,
+    name: thread.name,
+    appliedTags: [...thread.appliedTags],
+    archived: thread.archived ?? false,
+    locked: thread.locked ?? false,
+    pinned: thread.flags.has("Pinned"),
+    messageCount: thread.messageCount ?? undefined,
+    createdAt: thread.createdAt?.toISOString(),
+    archiveTimestamp: thread.archivedAt?.toISOString(),
+  };
+
+  if (thread.ownerId) post.ownerId = thread.ownerId;
+
+  if (thread.parent) {
+    post.parentId = thread.parent.id;
+    post.parentName = thread.parent.name;
+  }
+
+  return post;
+}
+
+/**
  * Format a member for response
  */
 export function formatMember(member: GuildMember): DiscordMember {
@@ -159,6 +192,16 @@ export function formatRole(role: Role): DiscordRole {
  * Format a message for response
  */
 export function formatMessage(message: Message): DiscordMessage {
+  const attachmentDetails = message.attachments.map((attachment): DiscordAttachment => ({
+    id: attachment.id,
+    filename: attachment.name,
+    url: attachment.url,
+    size: attachment.size,
+    contentType: attachment.contentType,
+    description: attachment.description,
+    isSpoiler: attachment.spoiler,
+    flags: attachment.flags.bitfield,
+  }));
   return {
     id: message.id,
     content: message.content,
@@ -167,7 +210,33 @@ export function formatMessage(message: Message): DiscordMessage {
     channelId: message.channelId,
     timestamp: message.createdAt.toISOString(),
     editedTimestamp: message.editedAt?.toISOString(),
-    attachments: message.attachments.map(a => a.url),
+    attachments: attachmentDetails.map(attachment => attachment.url),
+    attachmentDetails: attachmentDetails.length === 0 ? undefined : attachmentDetails,
+    embeds: message.embeds.length,
+  };
+}
+
+export function formatApiMessage(message: APIMessage): DiscordMessage {
+  const attachmentDetails = message.attachments.map((attachment): DiscordAttachment => ({
+    id: attachment.id,
+    filename: attachment.filename,
+    url: attachment.url,
+    size: attachment.size,
+    contentType: attachment.content_type ?? null,
+    description: attachment.description ?? null,
+    isSpoiler: ((attachment.flags ?? 0) & AttachmentFlags.IsSpoiler) !== 0,
+    flags: attachment.flags ?? 0,
+  }));
+  return {
+    id: message.id,
+    content: message.content,
+    authorId: message.author.id,
+    authorName: message.author.username,
+    channelId: message.channel_id,
+    timestamp: new Date(message.timestamp).toISOString(),
+    editedTimestamp: message.edited_timestamp ? new Date(message.edited_timestamp).toISOString() : undefined,
+    attachments: attachmentDetails.map(attachment => attachment.url),
+    attachmentDetails: attachmentDetails.length === 0 ? undefined : attachmentDetails,
     embeds: message.embeds.length,
   };
 }
@@ -238,6 +307,22 @@ export function channelToMarkdown(channel: DiscordChannel): string {
   return md;
 }
 
+export function forumPostToMarkdown(post: DiscordForumPost): string {
+  let md = `### 🧵 ${post.name}
+- **ID**: ${post.id}`;
+  if (post.parentName) md += `\n- **Forum**: ${post.parentName}`;
+  if (post.ownerId) md += `\n- **Author ID**: ${post.ownerId}`;
+  if (post.appliedTags.length > 0) md += `\n- **Tags**: ${post.appliedTags.join(", ")}`;
+  if (post.messageCount !== undefined) md += `\n- **Messages**: ${post.messageCount}`;
+  const state: string[] = [];
+  if (post.pinned) state.push("📌 Pinned");
+  if (post.archived) state.push("🗄️ Archived");
+  if (post.locked) state.push("🔒 Locked");
+  md += `\n- **Status**: ${state.length > 0 ? state.join(", ") : "Active"}`;
+  if (post.createdAt) md += `\n- **Created**: ${new Date(post.createdAt).toLocaleString()}`;
+  return md;
+}
+
 export function memberToMarkdown(member: DiscordMember): string {
   let md = `### ${member.displayName}
 - **Username**: ${member.username}
@@ -263,6 +348,11 @@ export function messageToMarkdown(message: DiscordMessage): string {
 ${message.content || "[No text content]"}`;
   if (message.attachments.length > 0) {
     md += `\n📎 ${message.attachments.length} attachment(s)`;
+  }
+  for (const attachment of message.attachmentDetails ?? []) {
+    md += `\n- ${attachment.filename} (ID ${attachment.id})`;
+    if (attachment.isSpoiler) md += " [Spoiler]";
+    if (attachment.description) md += ` - ${attachment.description}`;
   }
   if (message.embeds > 0) {
     md += `\n📋 ${message.embeds} embed(s)`;

@@ -16,8 +16,6 @@ import {
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
-import { Collection, GuildMember } from "discord.js";
-import { DiscordMember } from "../types.js";
 
 export function registerMemberTools(server: McpServer) {
   server.registerTool(
@@ -29,7 +27,7 @@ export function registerMemberTools(server: McpServer) {
 Args:
   - guild_id (string): Discord server/guild ID
   - limit (number): Maximum number of members (1-100, default: 20)
-  - after (string, optional): Get members after this user ID (for pagination)
+  - after (string, optional): Pass the highest user ID from the previous page
   - response_format ('markdown' | 'json'): Output format (default: 'json')
 
 Returns:
@@ -54,15 +52,8 @@ Returns:
           };
         }
 
-        const options: { limit: number; after?: string } = { limit: params.limit };
-        if (params.after) options.after = params.after;
-
-        // The fetch API returns a Collection when given limit, use 'as unknown as' to handle the union type
-        const membersResult = (await guild.members.fetch(options)) as unknown as Collection<string, GuildMember>;
-
-        // Convert Collection to array
-        const membersArray = Array.from(membersResult.values());
-        const formatted = membersArray.map((m) => formatMember(m));
+        const members = await guild.members.list({ limit: params.limit, after: params.after });
+        const formatted = members.map(formatMember);
 
         const text = formatResponse(
           formatted,
@@ -239,8 +230,12 @@ Returns:
           };
         }
 
-        const member = await guild.members.fetch(params.user_id);
-        await member.setNickname(params.nickname ?? null);
+        if (params.user_id === client.user?.id) {
+          await guild.members.editMe({ nick: params.nickname || null });
+        } else {
+          const member = await guild.members.fetch(params.user_id);
+          await member.setNickname(params.nickname ?? null);
+        }
 
         const action = params.nickname ? `set to "${params.nickname}"` : "reset";
         return {

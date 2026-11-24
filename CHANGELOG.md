@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Manage forum posts and their tags, archive state, locks, and pins.
+- Update the bot's own global avatar and banner, or its nickname, avatar, and banner in a specific server.
+- Search server messages by text and other filters.
+- Look up effective guild and channel permissions for members and roles, and count members assigned to each server role.
+- Paginate pinned messages using Discord's current pin endpoints.
+- Create, read, and close native Discord polls.
+- Create restricted and role-granting invites, and list or edit the users allowed to accept them.
+- Filter and paginate audit logs by named or numeric events, including channel and role reorders.
+- Send rich messages and forum openings with embeds, attachments, link buttons, and mention allowlists. Edit attachment alt text and spoilers in place.
+
+### Changed
+
+- Require Node.js 20 or later for the updated MCP and HTTP dependencies.
+
+### Fixed
+
+- Apply the `after` cursor when listing server members.
+- Respect Discord's channel obfuscation when listing channels or reading their permission overwrites.
+- Document Discord's separate permissions for pinning messages, creating custom emoji, and creating scheduled events.
+
 ## [1.1.4] - 2025-01-29
 
 ### Added

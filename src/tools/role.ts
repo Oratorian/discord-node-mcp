@@ -30,13 +30,13 @@ const ROLE_PERMISSION_LIST = [
   'Administrator', 'ViewAuditLog', 'ViewGuildInsights', 'ManageGuild', 'ManageRoles',
   'ManageChannels', 'KickMembers', 'BanMembers', 'CreateInstantInvite', 'ChangeNickname',
   'ManageNicknames', 'ManageEmojisAndStickers', 'ManageWebhooks', 'ManageGuildExpressions',
-  'ViewCreatorMonetizationAnalytics', 'ModerateMembers',
+  'CreateGuildExpressions', 'ViewCreatorMonetizationAnalytics', 'ModerateMembers',
   // Text Channel Permissions
   'ViewChannel', 'SendMessages', 'SendTTSMessages', 'ManageMessages', 'EmbedLinks',
   'AttachFiles', 'ReadMessageHistory', 'MentionEveryone', 'UseExternalEmojis',
   'AddReactions', 'UseApplicationCommands', 'ManageThreads', 'CreatePublicThreads',
   'CreatePrivateThreads', 'UseExternalStickers', 'SendMessagesInThreads', 'SendVoiceMessages',
-  'SendPolls', 'UseExternalApps',
+  'SendPolls', 'UseExternalApps', 'PinMessages', 'BypassSlowmode',
   // Voice Channel Permissions
   'Connect', 'Speak', 'MuteMembers', 'DeafenMembers', 'MoveMembers', 'UseVAD',
   'PrioritySpeaker', 'Stream', 'UseSoundboard', 'UseExternalSounds', 'UseEmbeddedActivities',

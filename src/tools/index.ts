@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerGuildTools } from "./guild.js";
 import { registerChannelTools } from "./channel.js";
+import { registerForumTools } from "./forum.js";
 import { registerMessageTools } from "./message.js";
 import { registerMemberTools } from "./member.js";
 import { registerRoleTools } from "./role.js";
@@ -10,10 +11,16 @@ import { registerWebhookTools } from "./webhook.js";
 import { registerInviteTools } from "./invite.js";
 import { registerEventTools } from "./event.js";
 import { registerCommunityTools } from "./community.js";
+import { registerProfileTools } from "./profile.js";
+import { registerPermissionsTools } from "./permissions.js";
+import { registerRoleCountTools } from "./role-counts.js";
+import { registerSearchTools } from "./search.js";
+import { registerPollTools } from "./poll.js";
 
 export function registerAllTools(server: McpServer) {
   registerGuildTools(server);
   registerChannelTools(server);
+  registerForumTools(server);
   registerMessageTools(server);
   registerMemberTools(server);
   registerRoleTools(server);
@@ -23,4 +30,9 @@ export function registerAllTools(server: McpServer) {
   registerInviteTools(server);
   registerEventTools(server);
   registerCommunityTools(server);
+  registerProfileTools(server);
+  registerPermissionsTools(server);
+  registerRoleCountTools(server);
+  registerSearchTools(server);
+  registerPollTools(server);
 }
