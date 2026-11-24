@@ -113,7 +113,11 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 ### Invite Management
 - `discord_list_invites` - List active invites
 - `discord_create_invite` - Create channel invite
+- `discord_list_invite_target_users` - List the users eligible to accept a restricted invite
+- `discord_edit_invite_target_users` - Add or remove users from an invite using `invite_code`, `action` (`add` or `remove`), and `user_ids`
 - `discord_delete_invite` - Delete an invite
+
+Pass `target_user_ids` to `discord_create_invite` to limit acceptance to up to 1,000 specified users. Pass `role_ids` to grant roles when users accept. Either option creates a fresh invite code. Granting roles requires **Manage Roles** and sufficient role hierarchy. Removing a target user affects future acceptance of the invite.
 
 ### Webhook Management
 - `discord_list_webhooks` - List webhooks (guild or channel)

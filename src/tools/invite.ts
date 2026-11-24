@@ -3,16 +3,22 @@ import {
   ListInvitesSchema,
   CreateInviteSchema,
   DeleteInviteSchema,
+  ListInviteTargetUsersSchema,
+  EditInviteTargetUsersSchema,
   type ListInvitesInput,
   type CreateInviteInput,
   type DeleteInviteInput,
-} from "../schemas/index.js";
+} from "../schemas/invite.js";
 import {
   getClient,
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
-import { TextChannel } from "discord.js";
+import { Routes, type RESTGetAPIInviteTargetUsersResult, type RESTPostAPIChannelInviteResult, type TextChannel } from "discord.js";
+
+function inviteCreatedText(code: string, url: string, maxUses: number | null, expiresAt: Date | null): string {
+  return `Created invite: ${url}\nCode: ${code}\nMax uses: ${maxUses || 'Unlimited'}\nExpires: ${expiresAt?.toISOString() || 'Never'}`;
+}
 
 export function registerInviteTools(server: McpServer) {
   server.registerTool(
@@ -84,7 +90,7 @@ Returns:
     "discord_create_invite",
     {
       title: "Create Invite",
-      description: `Create an invite link for a channel.
+      description: `Create an invite link for a channel. Supply target_user_ids for an invite restricted to specific Discord users, and role_ids to grant roles on acceptance. Either option creates a new invite code.
 
 Args:
   - channel_id (string): Discord channel ID
@@ -92,6 +98,8 @@ Args:
   - max_uses (number): Max uses (0 = unlimited)
   - temporary (boolean): Kick members when they disconnect if not assigned a role
   - unique (boolean): Create new unique invite vs reuse existing
+  - target_user_ids (string[], optional): Only these users can see and accept the invite (1-1000 IDs)
+  - role_ids (string[], optional): Roles granted on acceptance. Requires Manage Roles and sufficient role hierarchy.
 
 Returns:
   Created invite URL`,
@@ -115,6 +123,28 @@ Returns:
           };
         }
 
+        if (params.target_user_ids || params.role_ids) {
+          const invite = await client.rest.post(Routes.channelInvites(params.channel_id), {
+            body: {
+              max_age: params.max_age,
+              max_uses: params.max_uses,
+              temporary: params.temporary,
+              unique: true,
+              target_user_ids: params.target_user_ids && [...new Set(params.target_user_ids)],
+              role_ids: params.role_ids && [...new Set(params.role_ids)],
+            },
+          }) as RESTPostAPIChannelInviteResult;
+          const expiresAt = invite.expires_at
+            ? new Date(invite.expires_at)
+            : invite.created_at && invite.max_age
+              ? new Date(Date.parse(invite.created_at) + invite.max_age * 1000)
+              : null;
+
+          return {
+            content: [{ type: "text", text: inviteCreatedText(invite.code, `https://discord.gg/${invite.code}`, invite.max_uses, expiresAt) }],
+          };
+        }
+
         const textChannel = channel as TextChannel;
         const invite = await textChannel.createInvite({
           maxAge: params.max_age,
@@ -124,7 +154,7 @@ Returns:
         });
 
         return {
-          content: [{ type: "text", text: `Created invite: ${invite.url}\nCode: ${invite.code}\nMax uses: ${invite.maxUses || 'Unlimited'}\nExpires: ${invite.expiresAt?.toISOString() || 'Never'}` }],
+          content: [{ type: "text", text: inviteCreatedText(invite.code, invite.url, invite.maxUses, invite.expiresAt) }],
         };
       } catch (error) {
         return {
@@ -133,6 +163,75 @@ Returns:
         };
       }
     }
+  );
+
+  server.registerTool(
+    "discord_list_invite_target_users",
+    {
+      title: "List Invite Target Users",
+      description: "List the Discord users allowed to accept a targeted invite. Available to the inviter or callers with Manage Server or View Audit Log.",
+      inputSchema: ListInviteTargetUsersSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ invite_code, response_format }) => {
+      try {
+        const client = await getClient();
+        const csv = await client.rest.get(Routes.inviteTargetUsers(invite_code)) as RESTGetAPIInviteTargetUsersResult;
+        const [header, ...rows] = Buffer.from(csv).toString("utf8").trim().split(/\r?\n/);
+        if (header !== "user_id" || rows.some(row => !/^\d{1,20}$/.test(row))) {
+          throw new Error("Discord returned an unrecognized target user list");
+        }
+
+        const text = formatResponse({ invite_code, target_user_ids: rows }, response_format, data =>
+          data.target_user_ids.length
+            ? `Target users for invite ${data.invite_code}\n\n${data.target_user_ids.map(id => `- ${id}`).join("\n")}`
+            : `No target users were returned for invite ${data.invite_code}.`
+        );
+        return { content: [{ type: "text", text }] };
+      } catch (error) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Error listing invite target users: ${(error as Error).message}` }],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    "discord_edit_invite_target_users",
+    {
+      title: "Edit Invite Target Users",
+      description: "Add or remove specific users on an existing targeted invite. Available to the inviter or callers with Manage Server. Removing a user affects future acceptance of the invite. Use member management to remove roles or memberships already granted.",
+      inputSchema: EditInviteTargetUsersSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ invite_code, action, user_ids }) => {
+      try {
+        const client = await getClient();
+        const route = Routes.inviteTargetUsers(invite_code);
+        const ids = [...new Set(user_ids)];
+        const suffix = action === "add" ? "bulk-add" : "bulk-delete";
+        await client.rest.post(`${route}/${suffix}`, { body: { user_ids: ids } });
+
+        const change = action === "add" ? "added to" : "removed from";
+        return { content: [{ type: "text", text: `${ids.length} target user(s) ${change} invite ${invite_code}.` }] };
+      } catch (error) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Error editing invite target users: ${(error as Error).message}` }],
+        };
+      }
+    },
   );
 
   server.registerTool(

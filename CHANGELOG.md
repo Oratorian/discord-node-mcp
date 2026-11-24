@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Look up effective guild and channel permissions for members and roles, and count members assigned to each server role.
 - Paginate pinned messages using Discord's current pin endpoints.
 - Create, read, and close native Discord polls.
+- Create restricted and role-granting invites, and list or edit the users allowed to accept them.
 
 ### Changed
 
