@@ -56,16 +56,28 @@ export const RemoveReactionSchema = z.object({
 
 export const PinMessageSchema = z.object({
   channel_id: ChannelIdSchema,
-  message_id: MessageIdSchema
+  message_id: MessageIdSchema,
+  reason: z.string()
+    .min(1)
+    .max(512)
+    .optional()
+    .describe("Reason visible in the guild audit log")
 }).strict();
 
-export const UnpinMessageSchema = z.object({
-  channel_id: ChannelIdSchema,
-  message_id: MessageIdSchema
-}).strict();
+export const UnpinMessageSchema = PinMessageSchema;
 
 export const GetPinnedMessagesSchema = z.object({
   channel_id: ChannelIdSchema,
+  limit: z.number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe("Maximum number of pins in a page. Supply a limit to receive pagination metadata."),
+  before: z.string()
+    .datetime({ offset: true })
+    .optional()
+    .describe("ISO 8601 pin timestamp. Use next_before from the previous page."),
   response_format: ResponseFormatSchema
 }).strict();
 

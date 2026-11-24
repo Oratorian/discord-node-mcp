@@ -26,8 +26,22 @@ import {
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
-import { TextChannel, TextBasedChannel, Message } from "discord.js";
-import { DiscordMessage } from "../types.js";
+import { Routes, type APIMessage, type Message, type RESTGetAPIChannelMessagesPinsResult } from "discord.js";
+import { ResponseFormat, type DiscordMessage } from "../types.js";
+
+function formatPinnedMessage(message: APIMessage): DiscordMessage {
+  return {
+    id: message.id,
+    content: message.content,
+    authorId: message.author.id,
+    authorName: message.author.username,
+    channelId: message.channel_id,
+    timestamp: new Date(message.timestamp).toISOString(),
+    editedTimestamp: message.edited_timestamp ? new Date(message.edited_timestamp).toISOString() : undefined,
+    attachments: message.attachments.map(attachment => attachment.url),
+    embeds: message.embeds.length,
+  };
+}
 
 export function registerMessageTools(server: McpServer) {
   server.registerTool(
@@ -340,11 +354,12 @@ Returns:
     "discord_pin_message",
     {
       title: "Pin Discord Message",
-      description: `Pin a message in a channel.
+      description: `Pin a message in a channel. In a guild channel the bot needs PIN_MESSAGES.
 
 Args:
   - channel_id (string): Discord channel ID
   - message_id (string): Message ID to pin
+  - reason (string, optional): Reason visible in the guild audit log
 
 Returns:
   Confirmation of message pinned`,
@@ -359,17 +374,9 @@ Returns:
     async (params: PinMessageInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
-
-        if (!channel || !('messages' in channel)) {
-          return {
-            isError: true,
-            content: [{ type: "text", text: `Text channel not found: ${params.channel_id}` }],
-          };
-        }
-
-        const message = await (channel as any).messages.fetch(params.message_id);
-        await message.pin();
+        await client.rest.put(Routes.channelMessagesPin(params.channel_id, params.message_id), {
+          reason: params.reason,
+        });
 
         return {
           content: [{ type: "text", text: `Pinned message ${params.message_id}` }],
@@ -387,11 +394,12 @@ Returns:
     "discord_unpin_message",
     {
       title: "Unpin Discord Message",
-      description: `Unpin a message in a channel.
+      description: `Unpin a message in a channel. In a guild channel the bot needs PIN_MESSAGES.
 
 Args:
   - channel_id (string): Discord channel ID
   - message_id (string): Message ID to unpin
+  - reason (string, optional): Reason visible in the guild audit log
 
 Returns:
   Confirmation of message unpinned`,
@@ -406,17 +414,9 @@ Returns:
     async (params: UnpinMessageInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
-
-        if (!channel || !('messages' in channel)) {
-          return {
-            isError: true,
-            content: [{ type: "text", text: `Text channel not found: ${params.channel_id}` }],
-          };
-        }
-
-        const message = await (channel as any).messages.fetch(params.message_id);
-        await message.unpin();
+        await client.rest.delete(Routes.channelMessagesPin(params.channel_id, params.message_id), {
+          reason: params.reason,
+        });
 
         return {
           content: [{ type: "text", text: `Unpinned message ${params.message_id}` }],
@@ -434,14 +434,16 @@ Returns:
     "discord_get_pinned_messages",
     {
       title: "Get Pinned Messages",
-      description: `Get all pinned messages in a channel.
+      description: `Get pinned messages in a channel. In a guild channel the bot needs VIEW_CHANNEL and READ_MESSAGE_HISTORY to see pins.
 
 Args:
   - channel_id (string): Discord channel ID
+  - limit (number, optional): Maximum pins per page (1-50, default: 50). Supply this to receive pagination metadata.
+  - before (string, optional): Get messages pinned before this ISO 8601 timestamp. Use next_before from the previous page.
   - response_format ('markdown' | 'json'): Output format (default: 'json')
 
 Returns:
-  List of pinned messages`,
+  A list of pinned messages by default. Supplying limit or before adds pin timestamps and pagination metadata.`,
       inputSchema: GetPinnedMessagesSchema,
       annotations: {
         readOnlyHint: true,
@@ -453,29 +455,37 @@ Returns:
     async (params: GetPinnedMessagesInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const query = new URLSearchParams();
+        if (params.limit !== undefined) query.set("limit", String(params.limit));
+        if (params.before !== undefined) query.set("before", params.before);
 
-        if (!channel || !('messages' in channel)) {
-          return {
-            isError: true,
-            content: [{ type: "text", text: `Text channel not found: ${params.channel_id}` }],
-          };
+        // Keep the API's timestamp precision when round-tripping the pagination cursor.
+        const { items, has_more } = await client.rest.get(Routes.channelMessagesPins(params.channel_id), {
+          query,
+        }) as RESTGetAPIChannelMessagesPinsResult;
+        const paginated = params.limit !== undefined || params.before !== undefined;
+        const pins = items.map(({ message, pinned_at }) => ({ message: formatPinnedMessage(message), pinned_at }));
+        if (!paginated) {
+          const messages = pins.map(pin => pin.message);
+          const text = params.response_format === ResponseFormat.MARKDOWN && messages.length === 0
+            ? "No pinned messages in this channel."
+            : formatResponse(messages, params.response_format, messageToMarkdown);
+          return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
         }
 
-        const messages = await (channel as any).messages.fetchPinned();
-        const formatted = messages.map((m: Message) => formatMessage(m));
-
-        const text = formatResponse(
-          Array.from(formatted.values()) as DiscordMessage[],
-          params.response_format,
-          (items: DiscordMessage[]) => items.length > 0
-            ? items.map(messageToMarkdown).join("\n\n---\n\n")
-            : "No pinned messages in this channel."
-        );
-
-        return {
-          content: [{ type: "text", text: truncateIfNeeded(text) }],
+        const page = {
+          items: pins,
+          has_more,
+          next_before: has_more ? pins.at(-1)?.pinned_at : undefined,
         };
+        const text = formatResponse(page, params.response_format, ({ items, next_before }) => {
+          if (items.length === 0) return "No pinned messages in this channel.";
+          const messages = items.map(({ message, pinned_at }) =>
+            `${messageToMarkdown(message)}\nPinned at ${pinned_at}`
+          ).join("\n\n---\n\n");
+          return next_before ? `Pass \`${next_before}\` as \`before\` for the next page.\n\n${messages}` : messages;
+        });
+        return { content: [{ type: "text", text: params.response_format === ResponseFormat.JSON ? text : truncateIfNeeded(text) }] };
       } catch (error) {
         return {
           isError: true,
