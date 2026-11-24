@@ -7,21 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### New Tools
 
-- Manage forum posts and their tags, archive state, locks, and pins.
-- Update the bot's own global avatar and banner, or its nickname, avatar, and banner in a specific server.
-- Search server messages by text and other filters.
-- Look up effective guild and channel permissions for members and roles, and count members assigned to each server role.
-- Paginate pinned messages using Discord's current pin endpoints.
-- Create, read, and close native Discord polls.
-- Create restricted and role-granting invites, and list or edit the users allowed to accept them.
-- Filter and paginate audit logs by named or numeric events, including channel and role reorders.
-- Send rich messages and forum openings with embeds, attachments, link buttons, and mention allowlists. Edit attachment alt text and spoilers in place.
+- `discord_create_forum_post` - Create a forum post with an opening message and optional tags.
+- `discord_list_forum_posts` - List active posts and optionally include archived posts.
+- `discord_get_forum_post` - Read a post's tags, status, and message count.
+- `discord_edit_forum_post` - Rename, retag, archive, lock, or pin a forum post.
+- `discord_delete_forum_post` - Delete a forum post.
+- `discord_update_bot_profile` - Set or clear the bot's global avatar and banner.
+- `discord_update_bot_guild_profile` - Set or clear the bot's nickname, avatar, and banner in one server.
+- `discord_search_guild_messages` - Search a server's messages by text, author, channel, and other filters.
+- `discord_get_member_permissions` - Look up a member's effective server or channel permissions.
+- `discord_get_role_permissions` - Look up a role's effective server or channel permissions.
+- `discord_get_guild_role_member_counts` - Get the number of members assigned to each server role.
+- `discord_create_poll` - Post a native Discord poll.
+- `discord_get_poll` - Read a poll's answers and latest vote counts.
+- `discord_end_poll` - Close a poll created by the bot.
+- `discord_list_invite_target_users` - List the users eligible to accept a restricted invite.
+- `discord_edit_invite_target_users` - Add or remove eligible users on an existing invite.
 
 ### Changed
 
 - Require Node.js 20 or later for the updated MCP and HTTP dependencies.
+- Paginate pinned messages using Discord's current pin endpoints.
+- Create restricted and role-granting invites with `discord_create_invite`.
+- Filter and paginate audit logs by named or numeric events, including channel and role reorders.
+- Send rich messages and forum openings with embeds, attachments, link buttons, and mention allowlists. Edit attachment alt text and spoilers in place.
 
 ### Fixed
 
