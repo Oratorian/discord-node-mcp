@@ -36,17 +36,19 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_remove_channel_permissions` - Remove permission overrides
 - `discord_get_channel_permissions` - View all permission overrides on a channel
 - `discord_sync_channel_permissions` - Sync channel permissions with parent category
+- `discord_get_member_permissions` and `discord_get_role_permissions` - Get Discord's effective permissions for a member or role. Use `scope: { "guild_id": "..." }` for server permissions or `scope: { "channel_id": "..." }` for channel permissions. Set `implicit: false` in the channel scope to skip implicit permission masking.
 
 ### Message Operations
 - `discord_send_message` - Send messages (with optional reply)
 - `discord_get_messages` - Retrieve channel messages (with pagination)
+- `discord_search_guild_messages` - Search server messages by text, author, channel, and other filters. Requires the Message Content intent and Read Message History.
 - `discord_edit_message` - Edit bot's messages
 - `discord_delete_message` - Delete messages
 - `discord_add_reaction` - Add emoji reactions
 - `discord_remove_reaction` - Remove bot's reactions
 - `discord_pin_message` - Pin a message
 - `discord_unpin_message` - Unpin a message
-- `discord_get_pinned_messages` - Get all pinned messages
+- `discord_get_pinned_messages` - Get the first 50 pinned messages. Pass `limit` or `before` to receive pagination metadata, then use `next_before` to retrieve the next page.
 
 ### Member Management
 - `discord_list_members` - List server members (with pagination)
@@ -60,6 +62,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 
 ### Role Management
 - `discord_list_roles` - List all server roles
+- `discord_get_guild_role_member_counts` - Get Discord's member counts for each server role
 - `discord_create_role` - Create a new role
 - `discord_edit_role` - Edit role name, color, permissions, and settings
 - `discord_delete_role` - Delete a role
@@ -146,6 +149,7 @@ Provide at least one profile field per call. Omit a field to keep it or pass `nu
    - Manage Channels
    - Manage Roles
    - Manage Messages
+   - Pin Messages (for pinning and unpinning messages)
    - Read Message History
    - Send Messages
    - Add Reactions
@@ -160,9 +164,11 @@ Provide at least one profile field per call. Omit a field to keep it or pass `nu
    **Server Administration:**
    - Manage Guild (for server settings)
    - View Audit Log
-   - Manage Emojis and Stickers
+   - Create Expressions (for creating custom emoji)
+   - Manage Expressions (for managing custom emoji and stickers)
    - Manage Webhooks
-   - Manage Events
+   - Create Events (for creating scheduled events)
+   - Manage Events (for managing other scheduled events)
    - Create Instant Invite
 
 4. Copy the generated URL and open it to invite the bot

@@ -12,7 +12,8 @@ import {
   PermissionsBitField,
   Channel,
   GuildChannel,
-  ThreadChannel
+  ThreadChannel,
+  type APIMessage,
 } from "discord.js";
 import {
   DiscordChannel,
@@ -198,6 +199,20 @@ export function formatMessage(message: Message): DiscordMessage {
     timestamp: message.createdAt.toISOString(),
     editedTimestamp: message.editedAt?.toISOString(),
     attachments: message.attachments.map(a => a.url),
+    embeds: message.embeds.length,
+  };
+}
+
+export function formatApiMessage(message: APIMessage): DiscordMessage {
+  return {
+    id: message.id,
+    content: message.content,
+    authorId: message.author.id,
+    authorName: message.author.username,
+    channelId: message.channel_id,
+    timestamp: new Date(message.timestamp).toISOString(),
+    editedTimestamp: message.edited_timestamp ? new Date(message.edited_timestamp).toISOString() : undefined,
+    attachments: message.attachments.map(attachment => attachment.url),
     embeds: message.embeds.length,
   };
 }

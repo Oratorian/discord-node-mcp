@@ -21,27 +21,14 @@ import {
 } from "../schemas/index.js";
 import {
   getClient,
+  formatApiMessage,
   formatMessage,
   messageToMarkdown,
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
-import { Routes, type APIMessage, type Message, type RESTGetAPIChannelMessagesPinsResult } from "discord.js";
+import { Routes, type Message, type RESTGetAPIChannelMessagesPinsResult } from "discord.js";
 import { ResponseFormat, type DiscordMessage } from "../types.js";
-
-function formatPinnedMessage(message: APIMessage): DiscordMessage {
-  return {
-    id: message.id,
-    content: message.content,
-    authorId: message.author.id,
-    authorName: message.author.username,
-    channelId: message.channel_id,
-    timestamp: new Date(message.timestamp).toISOString(),
-    editedTimestamp: message.edited_timestamp ? new Date(message.edited_timestamp).toISOString() : undefined,
-    attachments: message.attachments.map(attachment => attachment.url),
-    embeds: message.embeds.length,
-  };
-}
 
 export function registerMessageTools(server: McpServer) {
   server.registerTool(
@@ -464,7 +451,7 @@ Returns:
           query,
         }) as RESTGetAPIChannelMessagesPinsResult;
         const paginated = params.limit !== undefined || params.before !== undefined;
-        const pins = items.map(({ message, pinned_at }) => ({ message: formatPinnedMessage(message), pinned_at }));
+        const pins = items.map(({ message, pinned_at }) => ({ message: formatApiMessage(message), pinned_at }));
         if (!paginated) {
           const messages = pins.map(pin => pin.message);
           const text = params.response_format === ResponseFormat.MARKDOWN && messages.length === 0

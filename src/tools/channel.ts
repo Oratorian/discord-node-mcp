@@ -71,7 +71,7 @@ const PERMISSION_LIST = [
   'ViewChannel', 'ManageChannels', 'ManageRoles', 'CreateInstantInvite',
   'SendMessages', 'SendMessagesInThreads', 'CreatePublicThreads', 'CreatePrivateThreads',
   'EmbedLinks', 'AttachFiles', 'AddReactions', 'UseExternalEmojis', 'UseExternalStickers',
-  'MentionEveryone', 'ManageMessages', 'ManageThreads', 'ReadMessageHistory',
+  'MentionEveryone', 'ManageMessages', 'PinMessages', 'BypassSlowmode', 'ManageThreads', 'ReadMessageHistory',
   'SendTTSMessages', 'UseApplicationCommands',
   'Connect', 'Speak', 'Stream', 'UseEmbeddedActivities', 'UseSoundboard',
   'UseExternalSounds', 'UseVAD', 'PrioritySpeaker', 'MuteMembers', 'DeafenMembers', 'MoveMembers',

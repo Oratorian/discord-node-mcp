@@ -12,6 +12,9 @@ import { registerInviteTools } from "./invite.js";
 import { registerEventTools } from "./event.js";
 import { registerCommunityTools } from "./community.js";
 import { registerProfileTools } from "./profile.js";
+import { registerPermissionsTools } from "./permissions.js";
+import { registerRoleCountTools } from "./role-counts.js";
+import { registerSearchTools } from "./search.js";
 
 export function registerAllTools(server: McpServer) {
   registerGuildTools(server);
@@ -27,4 +30,7 @@ export function registerAllTools(server: McpServer) {
   registerEventTools(server);
   registerCommunityTools(server);
   registerProfileTools(server);
+  registerPermissionsTools(server);
+  registerRoleCountTools(server);
+  registerSearchTools(server);
 }

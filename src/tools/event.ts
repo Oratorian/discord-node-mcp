@@ -85,7 +85,7 @@ Returns:
     "discord_create_event",
     {
       title: "Create Scheduled Event",
-      description: `Create a scheduled event in a server.
+      description: `Create a scheduled event in a server. The bot needs CREATE_EVENTS.
 
 Args:
   - guild_id (string): Discord server/guild ID

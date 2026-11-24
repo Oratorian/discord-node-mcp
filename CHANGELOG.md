@@ -11,10 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Manage forum posts and their tags, archive state, locks, and pins.
 - Update the bot's own global avatar and banner, or its nickname, avatar, and banner in a specific server.
+- Search server messages by text and other filters.
+- Look up effective guild and channel permissions for members and roles, and count members assigned to each server role.
+- Paginate pinned messages using Discord's current pin endpoints.
 
 ### Fixed
 
 - Respect Discord's channel obfuscation when listing channels or reading their permission overwrites.
+- Document Discord's separate permissions for pinning messages, creating custom emoji, and creating scheduled events.
 
 ## [1.1.4] - 2025-01-29
 
