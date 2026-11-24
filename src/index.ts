@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from "express";
 import { createServer } from "./server.js";
-import { MAX_PROFILE_IMAGE_BASE64_LENGTH } from "./constants.js";
+import { MAX_MESSAGE_UPLOAD_BASE64_LENGTH, MAX_PROFILE_IMAGE_BASE64_LENGTH } from "./constants.js";
 
 async function runStdio(): Promise<void> {
   const server = createServer();
@@ -15,7 +15,8 @@ async function runStdio(): Promise<void> {
 
 async function runHTTP(): Promise<void> {
   const app = express();
-  app.use(express.json({ limit: 2 * MAX_PROFILE_IMAGE_BASE64_LENGTH + 128 * 1024 }));
+  const maxEncodedUpload = Math.max(MAX_MESSAGE_UPLOAD_BASE64_LENGTH, 2 * MAX_PROFILE_IMAGE_BASE64_LENGTH);
+  app.use(express.json({ limit: maxEncodedUpload + 512 * 1024 }));
 
   app.post("/mcp", async (req, res, next) => {
     const server = createServer();

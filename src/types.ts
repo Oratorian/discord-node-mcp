@@ -65,6 +65,17 @@ export interface DiscordRole {
   hoist: boolean;
 }
 
+export interface DiscordAttachment {
+  id: string;
+  filename: string;
+  url: string;
+  size: number;
+  contentType: string | null;
+  description: string | null;
+  isSpoiler: boolean;
+  flags: number;
+}
+
 export interface DiscordMessage {
   id: string;
   content: string;
@@ -74,6 +85,7 @@ export interface DiscordMessage {
   timestamp: string;
   editedTimestamp?: string;
   attachments: string[];
+  attachmentDetails?: DiscordAttachment[];
   embeds: number;
 }
 

@@ -1,12 +1,11 @@
 import { z } from "zod";
 import { ChannelIdSchema, MessageIdSchema, ResponseFormatSchema } from "./common.js";
+import { AllowedMentionsSchema, AttachmentUpdatesSchema, MessageContentFields } from "./message-content.js";
 
 export const SendMessageSchema = z.object({
   channel_id: ChannelIdSchema,
-  content: z.string()
-    .min(1)
-    .max(2000)
-    .describe("Message content (max 2000 characters)"),
+  ...MessageContentFields,
+  allowed_mentions: AllowedMentionsSchema.extend({ replied_user: z.boolean().optional() }).optional(),
   reply_to: MessageIdSchema.optional()
     .describe("Optional message ID to reply to")
 }).strict();
@@ -34,10 +33,9 @@ export const DeleteMessageSchema = z.object({
 export const EditMessageSchema = z.object({
   channel_id: ChannelIdSchema,
   message_id: MessageIdSchema,
-  content: z.string()
-    .min(1)
-    .max(2000)
-    .describe("New message content (max 2000 characters)")
+  ...MessageContentFields,
+  content: MessageContentFields.content.nullable().describe("New message text, or null to clear existing text"),
+  attachment_updates: AttachmentUpdatesSchema.optional(),
 }).strict();
 
 export const AddReactionSchema = z.object({

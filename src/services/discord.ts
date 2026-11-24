@@ -9,6 +9,7 @@ import {
   Role,
   Message,
   ChannelType,
+  AttachmentFlags,
   PermissionsBitField,
   Channel,
   GuildChannel,
@@ -22,6 +23,7 @@ import {
   DiscordMember,
   DiscordRole,
   DiscordMessage,
+  DiscordAttachment,
   ResponseFormat
 } from "../types.js";
 import { CHARACTER_LIMIT } from "../constants.js";
@@ -190,6 +192,16 @@ export function formatRole(role: Role): DiscordRole {
  * Format a message for response
  */
 export function formatMessage(message: Message): DiscordMessage {
+  const attachmentDetails = message.attachments.map((attachment): DiscordAttachment => ({
+    id: attachment.id,
+    filename: attachment.name,
+    url: attachment.url,
+    size: attachment.size,
+    contentType: attachment.contentType,
+    description: attachment.description,
+    isSpoiler: attachment.spoiler,
+    flags: attachment.flags.bitfield,
+  }));
   return {
     id: message.id,
     content: message.content,
@@ -198,12 +210,23 @@ export function formatMessage(message: Message): DiscordMessage {
     channelId: message.channelId,
     timestamp: message.createdAt.toISOString(),
     editedTimestamp: message.editedAt?.toISOString(),
-    attachments: message.attachments.map(a => a.url),
+    attachments: attachmentDetails.map(attachment => attachment.url),
+    attachmentDetails: attachmentDetails.length === 0 ? undefined : attachmentDetails,
     embeds: message.embeds.length,
   };
 }
 
 export function formatApiMessage(message: APIMessage): DiscordMessage {
+  const attachmentDetails = message.attachments.map((attachment): DiscordAttachment => ({
+    id: attachment.id,
+    filename: attachment.filename,
+    url: attachment.url,
+    size: attachment.size,
+    contentType: attachment.content_type ?? null,
+    description: attachment.description ?? null,
+    isSpoiler: ((attachment.flags ?? 0) & AttachmentFlags.IsSpoiler) !== 0,
+    flags: attachment.flags ?? 0,
+  }));
   return {
     id: message.id,
     content: message.content,
@@ -212,7 +235,8 @@ export function formatApiMessage(message: APIMessage): DiscordMessage {
     channelId: message.channel_id,
     timestamp: new Date(message.timestamp).toISOString(),
     editedTimestamp: message.edited_timestamp ? new Date(message.edited_timestamp).toISOString() : undefined,
-    attachments: message.attachments.map(attachment => attachment.url),
+    attachments: attachmentDetails.map(attachment => attachment.url),
+    attachmentDetails: attachmentDetails.length === 0 ? undefined : attachmentDetails,
     embeds: message.embeds.length,
   };
 }
@@ -324,6 +348,11 @@ export function messageToMarkdown(message: DiscordMessage): string {
 ${message.content || "[No text content]"}`;
   if (message.attachments.length > 0) {
     md += `\n📎 ${message.attachments.length} attachment(s)`;
+  }
+  for (const attachment of message.attachmentDetails ?? []) {
+    md += `\n- ${attachment.filename} (ID ${attachment.id})`;
+    if (attachment.isSpoiler) md += " [Spoiler]";
+    if (attachment.description) md += ` - ${attachment.description}`;
   }
   if (message.embeds > 0) {
     md += `\n📋 ${message.embeds} embed(s)`;

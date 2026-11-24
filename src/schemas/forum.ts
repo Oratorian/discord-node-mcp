@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ChannelIdSchema, ResponseFormatSchema } from "./common.js";
+import { MessageContentFields } from "./message-content.js";
 
 // Forum posts (threads) live inside a forum channel. A post ID and a forum
 // channel ID are both channel snowflakes, so they reuse ChannelIdSchema.
@@ -17,10 +18,7 @@ export const CreateForumPostSchema = z.object({
     .min(1)
     .max(100)
     .describe("Post title (max 100 characters)"),
-  content: z.string()
-    .min(1)
-    .max(2000)
-    .describe("Content of the post's opening message (max 2000 characters)"),
+  ...MessageContentFields,
   applied_tags: AppliedTagsSchema.optional(),
   auto_archive_duration: AutoArchiveSchema.optional(),
   response_format: ResponseFormatSchema

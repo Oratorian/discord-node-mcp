@@ -27,20 +27,35 @@ import {
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
-import { Routes, type Message, type RESTGetAPIChannelMessagesPinsResult } from "discord.js";
+import { prepareMessageContent, requireMessageContent } from "../services/message-content.js";
+import { MAX_MESSAGE_ATTACHMENTS } from "../constants.js";
+import { Routes, type Message, type MessageEditOptions, type RESTGetAPIChannelMessagesPinsResult } from "discord.js";
 import { ResponseFormat, type DiscordMessage } from "../types.js";
+
+const pendingAttachmentEdits = new Map<string, Promise<void>>();
+
+async function queueAttachmentEdit(messageId: string, edit: () => Promise<void>) {
+  const current = (pendingAttachmentEdits.get(messageId) ?? Promise.resolve()).catch(() => {}).then(edit);
+  pendingAttachmentEdits.set(messageId, current);
+  try {
+    await current;
+  } finally {
+    if (pendingAttachmentEdits.get(messageId) === current) pendingAttachmentEdits.delete(messageId);
+  }
+}
 
 export function registerMessageTools(server: McpServer) {
   server.registerTool(
     "discord_send_message",
     {
       title: "Send Discord Message",
-      description: `Send a message to a Discord channel.
+      description: `Send message text, rich embeds, files, or link buttons to a Discord channel.
 
 Args:
   - channel_id (string): Discord channel ID
-  - content (string): Message content (max 2000 characters)
+  - content (string, optional): Message text (max 2000 characters)
   - reply_to (string, optional): Message ID to reply to
+  - allowed_mentions (object, optional): Limit notifications to the supplied role IDs, user IDs, or reply author
 
 Returns:
   The sent message details including ID`,
@@ -54,22 +69,23 @@ Returns:
     },
     async (params: SendMessageInput) => {
       try {
+        requireMessageContent(params);
+        const options = prepareMessageContent(params);
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await client.channels.fetch(params.channel_id);
 
-        if (!channel || !('send' in channel)) {
+        if (!channel?.isSendable()) {
           return {
             isError: true,
             content: [{ type: "text", text: `Text channel not found: ${params.channel_id}` }],
           };
         }
 
-        const options: any = { content: params.content };
-        if (params.reply_to) {
-          options.reply = { messageReference: params.reply_to };
-        }
-
-        const message = await (channel as any).send(options);
+        const message = await channel.send({
+          ...options,
+          content: params.content,
+          reply: params.reply_to ? { messageReference: params.reply_to } : undefined,
+        });
 
         return {
           content: [{ type: "text", text: `Message sent (ID: ${message.id})` }],
@@ -97,7 +113,7 @@ Args:
   - response_format ('markdown' | 'json'): Output format (default: 'json')
 
 Returns:
-  List of messages with content, author, timestamp, attachments`,
+  List of messages with content, author, timestamp, and attachment details including IDs, descriptions, and spoiler state`,
       inputSchema: GetMessagesSchema,
       annotations: {
         readOnlyHint: true,
@@ -109,7 +125,7 @@ Returns:
     async (params: GetMessagesInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await client.channels.fetch(params.channel_id);
 
         if (!channel || !('messages' in channel)) {
           return {
@@ -132,7 +148,7 @@ Returns:
         );
 
         return {
-          content: [{ type: "text", text: truncateIfNeeded(text) }],
+          content: [{ type: "text", text: params.response_format === ResponseFormat.JSON ? text : truncateIfNeeded(text) }],
         };
       } catch (error) {
         return {
@@ -194,12 +210,15 @@ Returns:
     "discord_edit_message",
     {
       title: "Edit Discord Message",
-      description: `Edit a message sent by the bot.
+      description: `Edit a message sent by the bot. Append new files or edit existing attachment descriptions and spoiler flags. Existing attachments are kept.
 
 Args:
   - channel_id (string): Discord channel ID
   - message_id (string): Message ID to edit
-  - content (string): New message content (max 2000 characters)
+  - content (string or null, optional): New message text, or null to clear it
+  - embeds (array, optional): Replace embeds, with an empty array to clear them
+  - link_buttons (array, optional): Replace link buttons, with an empty array to clear them
+  - attachment_updates (array, optional): Change the description or spoiler flag of an attachment by ID
 
 Returns:
   Confirmation of edit`,
@@ -207,24 +226,50 @@ Returns:
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
-        idempotentHint: true,
+        idempotentHint: false,
         openWorldHint: true,
       },
     },
     async (params: EditMessageInput) => {
       try {
+        if (params.content === undefined && params.embeds === undefined && params.link_buttons === undefined &&
+            !params.files?.length && !params.attachment_updates?.length) {
+          throw new Error("Provide at least one message or attachment field to edit");
+        }
+        const options: MessageEditOptions = { ...prepareMessageContent(params), content: params.content };
+        const updates = new Map(params.attachment_updates?.map(update => [update.attachment_id, update]));
+        if (updates.size !== (params.attachment_updates?.length ?? 0)) {
+          throw new Error("List each attachment ID only once");
+        }
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await client.channels.fetch(params.channel_id);
 
-        if (!channel || !('messages' in channel)) {
+        if (!channel?.isTextBased() || !('messages' in channel)) {
           return {
             isError: true,
             content: [{ type: "text", text: `Text channel not found: ${params.channel_id}` }],
           };
         }
 
-        const message = await (channel as any).messages.fetch(params.message_id);
-        await message.edit(params.content);
+        if (updates.size > 0 || options.files?.length) {
+          await queueAttachmentEdit(params.message_id, async () => {
+            const message = await channel.messages.fetch({ message: params.message_id, force: true });
+            for (const id of updates.keys()) {
+              if (!message.attachments.has(id)) throw new Error(`Attachment ${id} was not found on the message`);
+            }
+            if (message.attachments.size + (options.files?.length ?? 0) > MAX_MESSAGE_ATTACHMENTS) {
+              throw new Error("A message can have at most 10 attachments");
+            }
+            const attachments = message.attachments.map(({ id }) => ({
+              id,
+              description: updates.get(id)?.description,
+              is_spoiler: updates.get(id)?.is_spoiler,
+            }));
+            await message.edit({ ...options, attachments });
+          });
+        } else {
+          await channel.messages.edit(params.message_id, options);
+        }
 
         return {
           content: [{ type: "text", text: `Edited message ${params.message_id}` }],

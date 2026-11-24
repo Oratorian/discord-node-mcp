@@ -18,7 +18,8 @@ import {
   formatResponse,
   truncateIfNeeded,
 } from "../services/discord.js";
-import { ChannelType, ForumChannel, ThreadChannel } from "discord.js";
+import { prepareMessageContent, requireMessageContent } from "../services/message-content.js";
+import { ChannelType, ForumChannel, ThreadChannel, type ThreadAutoArchiveDuration } from "discord.js";
 import { ResponseFormat } from "../types.js";
 
 /**
@@ -41,7 +42,9 @@ To reply within an existing forum post, use discord_send_message with the post's
 Args:
   - channel_id (string): Forum channel ID to create the post in
   - name (string): Post title (max 100 characters)
-  - content (string): Content of the opening message (max 2000 characters)
+  - content (string, optional): Text for the opening message (max 2000 characters)
+  - embeds, files, link_buttons (arrays, optional): Rich content for the opening message
+  - allowed_mentions (object, optional): Limit notifications to the supplied role and user IDs
   - applied_tags (string[], optional): Tag IDs to apply (max 5, from the forum's available tags)
   - auto_archive_duration ('60' | '1440' | '4320' | '10080', optional): Minutes before auto-archive
   - response_format ('markdown' | 'json'): Output format (default: 'json')
@@ -58,6 +61,8 @@ Returns:
     },
     async (params: CreateForumPostInput) => {
       try {
+        requireMessageContent(params);
+        const message = { ...prepareMessageContent(params), content: params.content };
         const client = await getClient();
         const channel = await fetchChannel(client, params.channel_id);
 
@@ -68,16 +73,14 @@ Returns:
           };
         }
 
-        const options: any = {
+        const thread = await channel.threads.create({
           name: params.name,
-          message: { content: params.content },
-        };
-        if (params.applied_tags) options.appliedTags = params.applied_tags;
-        if (params.auto_archive_duration) {
-          options.autoArchiveDuration = parseInt(params.auto_archive_duration, 10);
-        }
-
-        const thread = await (channel as ForumChannel).threads.create(options);
+          message,
+          appliedTags: params.applied_tags,
+          autoArchiveDuration: params.auto_archive_duration === undefined
+            ? undefined
+            : Number(params.auto_archive_duration) as ThreadAutoArchiveDuration,
+        });
 
         const text = formatResponse(
           formatForumPost(thread),

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create, read, and close native Discord polls.
 - Create restricted and role-granting invites, and list or edit the users allowed to accept them.
 - Filter and paginate audit logs by named or numeric events, including channel and role reorders.
+- Send rich messages and forum openings with embeds, attachments, link buttons, and mention allowlists. Edit attachment alt text and spoilers in place.
 
 ### Changed
 

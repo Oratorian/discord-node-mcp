@@ -24,7 +24,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - Tags support custom emojis and moderation settings
 
 ### Forum Post Management
-- `discord_create_forum_post` - Create a new post (thread) in a forum channel with a title, opening message, applied tags, and auto-archive duration
+- `discord_create_forum_post` - Create a forum post with a title, a rich opening message, applied tags, and an auto-archive duration
 - `discord_list_forum_posts` - List posts in a forum channel (optionally including archived posts)
 - `discord_get_forum_post` - Get a single post's details (tags, archived/locked/pinned status, message count)
 - `discord_edit_forum_post` - Moderate a post: rename, retag, archive/reopen, lock/unlock, or pin/unpin
@@ -39,16 +39,33 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_get_member_permissions` and `discord_get_role_permissions` - Get Discord's effective permissions for a member or role. Use `scope: { "guild_id": "..." }` for server permissions or `scope: { "channel_id": "..." }` for channel permissions. Set `implicit: false` in the channel scope to skip implicit permission masking.
 
 ### Message Operations
-- `discord_send_message` - Send messages (with optional reply)
+- `discord_send_message` - Send messages with optional replies, embeds, files, and link buttons
 - `discord_get_messages` - Retrieve channel messages (with pagination)
 - `discord_search_guild_messages` - Search server messages by text, author, channel, and other filters. Requires the Message Content intent and Read Message History.
-- `discord_edit_message` - Edit bot's messages
+- `discord_edit_message` - Edit the bot's messages and their attachment descriptions or spoiler flags
 - `discord_delete_message` - Delete messages
 - `discord_add_reaction` - Add emoji reactions
 - `discord_remove_reaction` - Remove bot's reactions
 - `discord_pin_message` - Pin a message
 - `discord_unpin_message` - Unpin a message
 - `discord_get_pinned_messages` - Get the first 50 pinned messages. Pass `limit` or `before` to receive pagination metadata, then use `next_before` to retrieve the next page.
+
+#### Rich messages and forum openings
+
+`discord_send_message` and `discord_create_forum_post` accept `content`, `embeds`, `link_buttons`, and `files`. Each link button takes a `label` and HTTPS or HTTP `url`. Each file takes a `filename`, raw `data_base64`, and optional `description` and `is_spoiler` fields. You can upload up to 10 files totaling 20 MiB per call.
+
+To ping only a release role, include its `<@&ROLE_ID>` mention in `content` and pass `allowed_mentions` with that role ID. An empty `allowed_mentions` object suppresses pings.
+
+```json
+{
+  "channel_id": "123456789012345678",
+  "content": "<@&234567890123456789> The release is ready.",
+  "allowed_mentions": { "role_ids": ["234567890123456789"] },
+  "link_buttons": [{ "label": "Download", "url": "https://example.com/releases" }]
+}
+```
+
+To change an existing file, find its ID in `discord_get_messages` under `attachmentDetails`, then pass `attachment_updates` with the `attachment_id` and a new `description`, `is_spoiler`, or both to `discord_edit_message`. A `null` description clears the alt text. New `files` are appended and existing files are retained.
 
 ### Polls
 
