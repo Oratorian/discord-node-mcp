@@ -6,12 +6,12 @@
     "url": "https://github.com/Oratorian/discord-node-mcp",
     "source": "github"
   },
-  "version": "1.1.5",
+  "version": "1.2.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@mahesvara/discord-mcpserver",
-      "version": "1.1.5",
+      "version": "1.2.0",
       "transport": {
         "type": "stdio"
       },

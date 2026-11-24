@@ -29,7 +29,3 @@ coverage/
 *.tgz
 .mcpregistry_github_token
 .mcpregistry_registry_token
-
-# Claude Code
-.claude/
-CLAUDE.md
