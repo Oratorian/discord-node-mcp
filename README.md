@@ -79,7 +79,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 ### Server Administration
 - `discord_list_bans` - List all banned users
 - `discord_prune_members` - Remove inactive members (with dry-run option)
-- `discord_get_audit_log` - View audit log entries
+- `discord_get_audit_log` - Filter audit entries by user or by a numeric or named `action_type`, such as `CHANNEL_POSITION_UPDATE` or `ROLE_POSITION_UPDATE`. Entries include Discord's event details, such as the count for merged reorder entries. Set `include_pagination: true` on the first page, then pass `next_before` as `before` for older entries or `next_after` as `after` for newer entries. To page from oldest to newest, start with `after: "0"`.
 
 ### Community Features
 - `discord_get_community_settings` - View community settings (rules channel, features, etc.)

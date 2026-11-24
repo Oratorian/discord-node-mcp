@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Paginate pinned messages using Discord's current pin endpoints.
 - Create, read, and close native Discord polls.
 - Create restricted and role-granting invites, and list or edit the users allowed to accept them.
+- Filter and paginate audit logs by named or numeric events, including channel and role reorders.
 
 ### Changed
 
