@@ -11,7 +11,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_leave_guild` - Leave a server
 
 ### Channel Management
-- `discord_list_channels` - List channels in a server (filter by type)
+- `discord_list_channels` - List channels visible to the bot in a server (filter by type)
 - `discord_get_channel` - Get channel details (includes forum tags for forum channels)
 - `discord_create_channel` - Create text/voice/forum channels and categories
 - `discord_edit_channel` - Edit channel name, topic, position, category, forum tags, and more

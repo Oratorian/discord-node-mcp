@@ -27,7 +27,32 @@ import {
   truncateIfNeeded,
   getChannelType,
 } from "../services/discord.js";
-import { ChannelType, GuildChannel, PermissionsBitField, OverwriteType, SortOrderType, ForumLayoutType } from "discord.js";
+import {
+  type Client,
+  ChannelFlags,
+  ChannelType,
+  GuildChannel,
+  PermissionsBitField,
+  OverwriteType,
+  SortOrderType,
+  ForumLayoutType,
+} from "discord.js";
+
+async function getVisibleChannel(client: Client, channelId: string) {
+  const channel = client.channels.cache.get(channelId);
+  if (!channel?.flags?.has(ChannelFlags.ChannelObfuscated)) {
+    return channel;
+  }
+
+  if (!(channel instanceof GuildChannel)) {
+    return undefined;
+  }
+
+  // Discord's HTTP channel list omits hidden channels. An entry here also
+  // refreshes the metadata if discord.js retained an old Gateway flag.
+  const visibleChannels = await channel.guild.channels.fetch();
+  return visibleChannels.get(channelId) ?? undefined;
+}
 
 // Helper function to convert permission strings to bitfield
 function parsePermissions(permissions: string[]): bigint {
@@ -58,7 +83,7 @@ export function registerChannelTools(server: McpServer) {
     "discord_list_channels",
     {
       title: "List Discord Channels",
-      description: `List channels in a Discord server.
+      description: `List channels visible to the bot in a Discord server.
 
 Args:
   - guild_id (string): Discord server/guild ID
@@ -87,20 +112,14 @@ Returns:
           };
         }
 
-        // Get all channels as array to avoid type predicate issues
-        const allChannels = Array.from(guild.channels.cache.values());
-
-        // Filter out threads and apply type filter
-        let filteredChannels = allChannels.filter(c => !c.isThread());
-
-        if (params.type !== "all") {
-          const targetType = getChannelType(params.type);
-          if (targetType !== null) {
-            filteredChannels = filteredChannels.filter(c => c.type === targetType);
+        const visibleChannels = await guild.channels.fetch();
+        const targetType = getChannelType(params.type);
+        const formatted = [];
+        for (const channel of visibleChannels.values()) {
+          if (channel && (targetType === null || channel.type === targetType)) {
+            formatted.push(formatChannel(channel));
           }
         }
-
-        const formatted = filteredChannels.map(c => formatChannel(c as GuildChannel));
         const text = formatResponse(
           formatted,
           params.response_format,
@@ -142,7 +161,7 @@ Returns:
     async (params: GetChannelInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !(channel instanceof GuildChannel)) {
           return {
@@ -325,7 +344,7 @@ Returns:
     async (params: DeleteChannelInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !('delete' in channel)) {
           return {
@@ -389,7 +408,7 @@ Returns:
     async (params: EditChannelInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !('edit' in channel)) {
           return {
@@ -498,7 +517,7 @@ Returns:
     async (params: SetChannelPermissionsInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !('permissionOverwrites' in channel)) {
           return {
@@ -568,7 +587,7 @@ Returns:
     async (params: RemoveChannelPermissionsInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !('permissionOverwrites' in channel)) {
           return {
@@ -615,7 +634,7 @@ Returns:
     async (params: GetChannelPermissionsInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !('permissionOverwrites' in channel)) {
           return {
@@ -687,7 +706,7 @@ Returns:
     async (params: SyncChannelPermissionsInput) => {
       try {
         const client = await getClient();
-        const channel = client.channels.cache.get(params.channel_id);
+        const channel = await getVisibleChannel(client, params.channel_id);
 
         if (!channel || !('lockPermissions' in channel)) {
           return {
