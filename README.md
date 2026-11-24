@@ -175,6 +175,8 @@ Provide at least one profile field per call. Omit a field to keep it or pass `nu
 
 ### 3. Install the MCP Server
 
+Requires Node.js 20 or later.
+
 **Option A: Install globally from npm**
 
 ```bash

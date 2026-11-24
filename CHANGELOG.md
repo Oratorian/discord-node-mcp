@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Look up effective guild and channel permissions for members and roles, and count members assigned to each server role.
 - Paginate pinned messages using Discord's current pin endpoints.
 
+### Changed
+
+- Require Node.js 20 or later for the updated MCP and HTTP dependencies.
+
 ### Fixed
 
 - Respect Discord's channel obfuscation when listing channels or reading their permission overwrites.
