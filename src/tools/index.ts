@@ -15,6 +15,7 @@ import { registerProfileTools } from "./profile.js";
 import { registerPermissionsTools } from "./permissions.js";
 import { registerRoleCountTools } from "./role-counts.js";
 import { registerSearchTools } from "./search.js";
+import { registerPollTools } from "./poll.js";
 
 export function registerAllTools(server: McpServer) {
   registerGuildTools(server);
@@ -33,4 +34,5 @@ export function registerAllTools(server: McpServer) {
   registerPermissionsTools(server);
   registerRoleCountTools(server);
   registerSearchTools(server);
+  registerPollTools(server);
 }

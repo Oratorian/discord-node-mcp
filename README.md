@@ -50,6 +50,12 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_unpin_message` - Unpin a message
 - `discord_get_pinned_messages` - Get the first 50 pinned messages. Pass `limit` or `before` to receive pagination metadata, then use `next_before` to retrieve the next page.
 
+### Polls
+
+- `discord_create_poll` posts a native poll. Pass a `channel_id`, a `question`, and up to 10 `answers` such as `[{"text":"Friday"},{"text":"Saturday"}]`. Set `duration_hours` to change the 24-hour default or `allow_multiselect` to allow multiple choices.
+- `discord_get_poll` reads the poll and its latest vote counts by `channel_id` and `message_id`. A `null` count means Discord has yet to provide results.
+- `discord_end_poll` closes a poll the bot created. Use `discord_get_poll` again for the final tally if Discord is still counting votes.
+
 ### Member Management
 - `discord_list_members` - List server members (with pagination)
 - `discord_get_member` - Get member details
@@ -152,6 +158,7 @@ Provide at least one profile field per call. Omit a field to keep it or pass `nu
    - Pin Messages (for pinning and unpinning messages)
    - Read Message History
    - Send Messages
+   - Send Polls (for creating polls)
    - Add Reactions
 
    **Member Management:**
