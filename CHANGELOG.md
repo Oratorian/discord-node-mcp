@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Apply the `after` cursor when listing server members.
 - Respect Discord's channel obfuscation when listing channels or reading their permission overwrites.
 - Document Discord's separate permissions for pinning messages, creating custom emoji, and creating scheduled events.
 

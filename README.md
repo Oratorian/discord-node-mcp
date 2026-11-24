@@ -57,7 +57,7 @@ An MCP (Model Context Protocol) server that enables LLMs to control Discord serv
 - `discord_end_poll` closes a poll the bot created. Use `discord_get_poll` again for the final tally if Discord is still counting votes.
 
 ### Member Management
-- `discord_list_members` - List server members (with pagination)
+- `discord_list_members` - List server members. Pass the highest returned user ID as `after` to get the next page.
 - `discord_get_member` - Get member details
 - `discord_kick_member` - Kick a member
 - `discord_ban_member` - Ban a member (with message deletion option)
