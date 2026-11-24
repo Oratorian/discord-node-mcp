@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
 ### New Tools
 
 - `discord_create_forum_post` - Create a forum post with an opening message and optional tags.
